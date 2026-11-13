@@ -188,13 +188,9 @@ Friend Module ModSecret
                 Try
                     Dim Manifest = GetLauncherUpdateManifest()
                     Dim LatestCode = Manifest("versionCode").Value(Of Integer)()
-                    Dim LatestVersion = Manifest("version")?.ToString()
-                    Dim DownloadUrl = Manifest("downloadUrl")?.ToString()
-                    If String.IsNullOrWhiteSpace(DownloadUrl) Then DownloadUrl = Manifest("releasePage")?.ToString()
                     RunInUi(
                         Sub()
                             If LatestCode > VersionCode Then
-                                Hint($"发现 PCLU 新版本 {LatestVersion}，正在内部下载……", HintType.Blue)
                                 UpdateCheckAutomatic()
                             Else
                                 MyMsgBox($"当前已是最新版本（{VersionBaseName}）。", "PCLU 更新", "确定")
@@ -218,6 +214,8 @@ Friend Module ModSecret
                     Dim Manifest = GetLauncherUpdateManifest()
                     Dim LatestCode = Manifest("versionCode").Value(Of Integer)()
                     If LatestCode <= VersionCode Then Return
+                    RunInUi(Sub() Hint("已检测到新版本，3秒后强制更新", HintType.Green))
+                    Thread.Sleep(3000)
                     Dim DownloadUrls As New List(Of String)
                     If Manifest("downloadUrls") IsNot Nothing Then DownloadUrls.AddRange(Manifest("downloadUrls").Values(Of String)())
                     If Not String.IsNullOrWhiteSpace(Manifest("downloadUrl")?.ToString()) Then DownloadUrls.Add(Manifest("downloadUrl").ToString())
@@ -243,6 +241,7 @@ Friend Module ModSecret
                     UpdateRestart(True)
                 Catch ex As Exception
                     Logger.Warn(ex, "PCLU 自动更新失败")
+                    RunInUi(Sub() Hint("PCLU 自动更新失败，请稍后重试。", HintType.Red))
                 End Try
             End Sub, "PCLU Forced Update", ThreadPriority.BelowNormal)
     End Sub
@@ -253,13 +252,49 @@ Friend Module ModSecret
         Dim NewFile = Paths.Base & "PCL\Update\PCLU.new.exe"
         If Not File.Exists(NewFile) Then Return
         Try
-            StartProcess(PathExe, $"--update {Process.GetCurrentProcess().Id} ""{PathExe}"" ""{NewFile}"" {If(TriggerRestartAndByEnd, "True", "False")}")
+            ScheduleUpdateReplace(PathExe, NewFile, TriggerRestartAndByEnd)
             IsUpdateWaitingRestart = False
             If TriggerRestartAndByEnd Then RunInUi(Sub() FormMain.EndProgramForce(ProcessReturnValues.Success))
         Catch ex As Exception
             Logger.Error(ex, "启动 PCLU 更新替换进程失败")
         End Try
     End Sub
+
+    Private Sub ScheduleUpdateReplace(OldFileName As String, NewFileName As String, RestartAfter As Boolean)
+        Dim ScriptFile = Paths.Base & "PCL\Update\PCLU.replace.cmd"
+        Dim OldShort = PathUtils.ToShortPath(OldFileName)
+        Dim NewShort = PathUtils.ToShortPath(NewFileName)
+        Dim BatchQuote = ChrW(34)
+        Dim ScriptLines As New List(Of String) From {
+            "@echo off",
+            "set " & BatchQuote & "NEW=" & NewShort & BatchQuote,
+            "set " & BatchQuote & "OLD=" & OldShort & BatchQuote,
+            "set /a N=0",
+            ":retry",
+            "set /a N+=1",
+            "if not exist " & BatchQuote & "%NEW%" & BatchQuote & " exit /b 1",
+            "copy /y " & BatchQuote & "%NEW%" & BatchQuote & " " & BatchQuote & "%OLD%" & BatchQuote & " >nul 2>&1",
+            "if not errorlevel 1 goto start",
+            "if %N% GEQ 120 exit /b 1",
+            "ping 127.0.0.1 -n 2 >nul",
+            "goto retry",
+            ":start",
+            "del " & BatchQuote & "%NEW%" & BatchQuote & " >nul 2>&1"
+        }
+        If RestartAfter Then ScriptLines.Add("start " & BatchQuote & BatchQuote & " " & BatchQuote & "%OLD%" & BatchQuote)
+        ScriptLines.Add("del " & BatchQuote & "%~f0" & BatchQuote & " >nul 2>&1")
+        Dim ScriptText = String.Join(vbCrLf, ScriptLines)
+        File.WriteAllText(ScriptFile, ScriptText, Encoding.ASCII)
+        Dim Quote = ChrW(34)
+        StartProcess(New ProcessStartInfo With {
+            .FileName = "cmd.exe",
+            .Arguments = "/d /c " & Quote & Quote & PathUtils.ToShortPath(ScriptFile) & Quote & Quote,
+            .CreateNoWindow = True,
+            .UseShellExecute = False,
+            .WindowStyle = ProcessWindowStyle.Hidden
+        })
+    End Sub
+
     Public Sub UpdateReplace(ProcessId As Integer, OldFileName As String, NewFileName As String, TriggerRestart As Boolean)
         Try
             Dim StartWait = Date.Now
@@ -273,11 +308,7 @@ Friend Module ModSecret
                 End Try
                 Thread.Sleep(100)
             Loop While (Date.Now - StartWait).TotalSeconds < 30
-            If File.Exists(NewFileName) Then
-                File.Copy(NewFileName, OldFileName, True)
-                FileUtils.Delete(NewFileName)
-            End If
-            If TriggerRestart Then StartProcess(OldFileName)
+            ScheduleUpdateReplace(OldFileName, NewFileName, TriggerRestart)
         Catch ex As Exception
             Logger.Error(ex, "替换 PCLU 主程序失败")
         End Try
