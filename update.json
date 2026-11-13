@@ -2,9 +2,9 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.6",
-  "versionCode": 427,
-  "releaseNotes": "PCLU 1.0.6：检测到新版本后显示绿色提示，3 秒后自动开始更新；更新替换失败时自动重试，成功后重新打开启动器；同时保留社区资源收藏、收藏夹和 LabyMod 支持。",
+  "version": "1.0.7",
+  "versionCode": 429,
+  "releaseNotes": "PCLU 1.0.7 测试更新：验证启动器内部更新、替换与自动重启流程。",
   "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
   "downloadUrls": [
     "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",

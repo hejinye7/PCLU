@@ -11,6 +11,9 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 429 Then 'Release 1.0.7
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "测试：验证 PCLU 内部更新、替换与自动重启流程"))
+            End If
             If LastVersion < 427 Then 'Release 1.0.6
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "优化：检测到新版本后显示绿色提示，3 秒后自动开始更新"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：更新替换失败时没有重试，导致更新后无法自动重启"))
@@ -121,6 +124,9 @@ Public Class FormMain
             '3：BUG+ IMP* FEAT-
             '2：BUG* IMP-
             '1：BUG-
+            If LastVersion < 430 Then 'Snapshot 1.0.7
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "测试：验证 PCLU 内部更新、替换与自动重启流程"))
+            End If
             If LastVersion < 428 Then 'Snapshot 1.0.6
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "优化：检测到新版本后显示绿色提示，3 秒后自动开始更新"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：更新替换失败时没有重试，导致更新后无法自动重启"))
