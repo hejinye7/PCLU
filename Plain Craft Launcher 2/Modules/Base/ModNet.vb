@@ -1657,7 +1657,7 @@ FinishExCatch:
                     If Not FilesToCheck.Any Then Return
                     '获取 MC 文件夹列表
                     Dim Folders As New List(Of String)
-                    Folders.Add(Paths.AppData & ".minecraft\") '总是添加官启文件夹，因为 HMCL 会把所有文件存在这里
+                    Folders.Add(Paths.Base & ".minecraft\") 'PCLU 的 Minecraft 数据统一位于程序根目录
                     Folders.AddRange(McFolderList.Select(Function(f) f.Location))
                     Folders = Folders.Distinct.Where(Function(f) DirectoryUtils.Exists(f)).ToList
                     '平均分配到多个检查线程

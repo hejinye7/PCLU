@@ -38,7 +38,7 @@
                             <EllipseGeometry Center="17 17" RadiusX="17" RadiusY="17" />
                         </Image.Clip>
                     </Image>
-                    <Image Source="/Plain Craft Launcher 2;component/Images/Heads/Logo.png" Grid.Row="3" Margin="3">
+                    <Image Source="/Plain Craft Launcher 2;component/Images/PCLUltraLogoSmall.png" Grid.Row="3" Margin="3">
                         <Image.Clip>
                             <EllipseGeometry Center="17 17" RadiusX="17" RadiusY="17" />
                         </Image.Clip>

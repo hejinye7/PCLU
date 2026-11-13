@@ -1898,7 +1898,7 @@ NextInstance:
         Try
             Dim ZipFileAddress As String = McInstanceSelected.PathIndie & "resourcepacks\PCL2 Skin.zip"
             Dim NewTypeSetup As Boolean = McInstanceSelected.Version.Vanilla.Major >= 13 OrElse McInstanceSelected.Version.Vanilla.Major < 6
-            If McLoginLoader.Input.Type = McLoginType.Legacy AndAlso Settings.Get(Of Integer)("LaunchSkinType") = 4 AndAlso FileUtils.Exists(Paths.AppDataThenName & "CustomSkin.png") Then
+            If McLoginLoader.Input.Type = McLoginType.Legacy AndAlso Settings.Get(Of Integer)("LaunchSkinType") = 4 AndAlso FileUtils.Exists(Paths.Base & "PCL\CustomSkin.png") Then
                 Dim MetaFileAddress As String = PathTemp & "pack.mcmeta"
                 Dim PackPicAddress As String = PathTemp & "pack.png"
                 If McInstanceSelected.Version.Vanilla.Major < 6 Then
@@ -1935,7 +1935,7 @@ NextInstance:
                 Dim Bit As New MyBitmap(PathImage & "Heads/Logo.png")
                 Bit.Save(PackPicAddress)
                 FileUtils.Write(MetaFileAddress, "{""pack"":{""pack_format"":" & PackVersion & ",""description"":""PCL 自定义离线皮肤资源包""}}")
-                Dim Skin As New MyBitmap(Paths.AppDataThenName & "CustomSkin.png")
+                Dim Skin As New MyBitmap(Paths.Base & "PCL\CustomSkin.png")
                 If (McInstanceSelected.Version.Vanilla.Major = 6 OrElse McInstanceSelected.Version.Vanilla.Major = 7) AndAlso Skin.Pic.Height = 64 Then
                     McLaunchLog("该 Minecraft 版本不支持双层皮肤，已进行裁剪")
                     Skin = Skin.Clip(0, 0, 64, 32)

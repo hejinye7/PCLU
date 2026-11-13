@@ -522,12 +522,11 @@ Public Class FormMain
                      "多谢各位的理解啦！", "重新解锁提醒")
         End If
         '移动自定义皮肤
-        If LastVersionCode <= 161 AndAlso FileUtils.Exists(Paths.Base & "PCL\CustomSkin.png") AndAlso Not FileUtils.Exists(Paths.AppDataThenName & "CustomSkin.png") Then
-            FileUtils.Copy(Paths.Base & "PCL\CustomSkin.png", Paths.AppDataThenName & "CustomSkin.png")
+        If LastVersionCode <= 161 AndAlso FileUtils.Exists(Paths.Base & "PCL\CustomSkin.png") Then
             Logger.Info("已移动离线自定义皮肤 (162)")
         End If
-        If LastVersionCode <= 263 AndAlso FileUtils.Exists(PathTemp & "CustomSkin.png") AndAlso Not FileUtils.Exists(Paths.AppDataThenName & "CustomSkin.png") Then
-            FileUtils.Copy(PathTemp & "CustomSkin.png", Paths.AppDataThenName & "CustomSkin.png")
+        If LastVersionCode <= 263 AndAlso FileUtils.Exists(PathTemp & "CustomSkin.png") Then
+            FileUtils.Copy(PathTemp & "CustomSkin.png", Paths.Base & "PCL\CustomSkin.png")
             Logger.Info("已移动离线自定义皮肤 (264)")
         End If
         '解除帮助页面的隐藏

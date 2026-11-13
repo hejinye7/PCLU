@@ -470,7 +470,7 @@ Public Class PageOtherTest
                         .ArchivePath = Path.Combine(TempFolder, $"temurin-jdk-{Major}.zip")
                     }
                     Dim SafeRelease = Entry.ReleaseName.RegexReplace("[^A-Za-z0-9._-]", "_")
-                    Entry.InstallPath = Path.Combine(Paths.AppData & ".minecraft\runtime", $"temurin-jdk-{Major}-{SafeRelease}")
+                            Entry.InstallPath = Path.Combine(Paths.Base & ".minecraft\runtime", $"temurin-jdk-{Major}-{SafeRelease}")
                     Packages.Add(Entry)
                     Files.Add(New NetFile({Entry.DownloadUrl}, Entry.ArchivePath,
                         New FileChecker With {.ActualSize = Entry.Size, .Hash = Entry.Sha256}))

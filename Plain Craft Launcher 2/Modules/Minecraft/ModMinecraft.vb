@@ -27,6 +27,7 @@ Public Module ModMinecraft
         End Set
     End Property
     Private Sub SetMcFolder(Value As String) '等同 McFolderSelected.Set
+        If String.IsNullOrWhiteSpace(Value) Then Value = "$.minecraft\"
         If PathUtils.IsSame(_McFolderSelected, Value.Replace("$", Paths.Base)) Then Return
         _McFolderSelected = Value.Replace("$", Paths.Base)
         _McFolderSelected = PathUtils.AddSlashSuffix(PathUtils.ForCompare(_McFolderSelected))
@@ -87,7 +88,7 @@ Public Module ModMinecraft
             End Try
 
             '扫描官启文件夹
-            Dim MojangPath As String = Paths.AppData & ".minecraft\"
+            Dim MojangPath As String = Paths.Base & ".minecraft\"
             If (Not CacheMcFolderList.Any OrElse Not PathUtils.IsSame(MojangPath, CacheMcFolderList(0).Location)) AndAlso '当前文件夹不是官启文件夹
                 DirectoryUtils.Exists(MojangPath & "versions\") Then '具有权限且存在 versions 文件夹
                 CacheMcFolderList.Add(New McFolder With {.Name = "官方启动器文件夹", .Location = MojangPath, .Type = McFolder.Types.Vanilla})

@@ -2,9 +2,9 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.1",
-  "versionCode": 417,
-  "releaseNotes": "品牌升级为 Plain Craft Launcher Ultra，加入负责人署名与多线路更新清单。",
+  "version": "1.0.2",
+  "versionCode": 419,
+  "releaseNotes": "统一使用根目录便携数据：.minecraft 保存游戏，PCL 保存设置、登录数据和缓存。",
   "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
   "downloadUrls": [
     "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",

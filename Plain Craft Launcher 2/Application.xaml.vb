@@ -103,17 +103,17 @@ RetryCacheCheck:
                 DirectoryUtils.Create(PathTemp)
                 CheckPermissionWithException(PathTemp)
             Catch ex As Exception
-                If PathUtils.IsSame(PathTemp, Path.GetTempPath() & "PCL\") Then
-                    MyMsgBox("PCL 无法访问缓存文件夹，可能导致程序出错或无法正常使用！" & vbCrLf & vbCrLf & "错误原因：" & ex.GetDisplay(True), "缓存文件夹不可用")
+                If PathUtils.IsSame(PathTemp, Paths.Base & "PCL\Cache\") Then
+                    MyMsgBox("PCLU 无法访问根目录 PCL\Cache 文件夹，可能导致程序出错或无法正常使用！" & vbCrLf & vbCrLf & "错误原因：" & ex.GetDisplay(True), "缓存文件夹不可用")
                 Else
-                    MyMsgBox("手动设置的缓存文件夹不可用，PCL 将使用默认缓存文件夹。" & vbCrLf & vbCrLf & "错误原因：" & ex.GetDisplay(True), "缓存文件夹不可用")
+                    MyMsgBox("便携缓存文件夹不可用。" & vbCrLf & vbCrLf & "错误原因：" & ex.GetDisplay(True), "缓存文件夹不可用")
                     Settings.Set("SystemSystemCache", "")
-                    PathTemp = Path.GetTempPath() & "PCL\"
+                    PathTemp = Paths.Base & "PCL\Cache\"
                     GoTo RetryCacheCheck
                 End If
             End Try
             DirectoryUtils.Create(PathTemp & "Cache\")
-            DirectoryUtils.Create(Paths.AppDataThenName)
+            DirectoryUtils.Create(Paths.Base & "PCL\")
             '设置 ToolTipService 默认值
             ToolTipService.InitialShowDelayProperty.OverrideMetadata(GetType(DependencyObject), New FrameworkPropertyMetadata(100))
             '设置网络配置默认值
