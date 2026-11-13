@@ -11,6 +11,16 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 425 Then 'Release 1.0.5
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：PCLU 更新支持在启动器内下载、替换并自动重启"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "优化：更新下载失败时保留当前版本，避免启动器损坏"))
+            End If
+            If LastVersion < 421 Then 'Release 1.0.3
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：社区资源支持 Mod、整合包、数据包、资源包和光影包收藏"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：下载侧边栏加入收藏夹入口"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：原版安装页面支持 LabyMod 客户端"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "优化：LabyMod 刷新资源列表，并与其他加载器选项互斥"))
+            End If
             If LastVersion < 415 Then 'Release 2.99.0.1
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "删除：MC 下载功能相关入口"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(1, "优化：为设置更新添加部分黑名单"))
@@ -107,6 +117,16 @@ Public Class FormMain
             '3：BUG+ IMP* FEAT-
             '2：BUG* IMP-
             '1：BUG-
+            If LastVersion < 426 Then 'Snapshot 1.0.5
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：PCLU 更新支持在启动器内下载、替换并自动重启"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "优化：更新下载失败时保留当前版本，避免启动器损坏"))
+            End If
+            If LastVersion < 422 Then 'Snapshot 1.0.3
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：社区资源支持 Mod、整合包、数据包、资源包和光影包收藏"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：下载侧边栏加入收藏夹入口"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：原版安装页面支持 LabyMod 客户端"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "优化：LabyMod 刷新资源列表，并与其他加载器选项互斥"))
+            End If
             If LastVersion < 416 Then 'Snapshot 2.99.0.1
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "删除：MC 下载功能相关入口"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(1, "优化：为设置更新添加部分黑名单"))
