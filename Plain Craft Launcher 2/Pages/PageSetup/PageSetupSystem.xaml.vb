@@ -20,9 +20,35 @@ Public Class PageSetupSystem
 
         AniControlEnabled += 1
         Reload()
+        TextPcluSyncPassword.Password = Settings.Get(Of String)("PcluSyncPassword")
         SliderLoad()
         AniControlEnabled -= 1
 
+    End Sub
+
+    Private Sub TextPcluSyncPassword_PasswordChanged(sender As Object, e As RoutedEventArgs) Handles TextPcluSyncPassword.PasswordChanged
+        If IsLoaded Then Settings.Set("PcluSyncPassword", TextPcluSyncPassword.Password)
+    End Sub
+
+    Private Sub BtnPcluSyncUpload_Click(sender As Object, e As MouseButtonEventArgs) Handles BtnPcluSyncUpload.Click
+        RunPcluSync(Sub() PcluSync.Upload(), "设置和收藏夹已上传到 WebDAV。")
+    End Sub
+
+    Private Sub BtnPcluSyncDownload_Click(sender As Object, e As MouseButtonEventArgs) Handles BtnPcluSyncDownload.Click
+        RunPcluSync(Sub() PcluSync.Download(), "设置和收藏夹已从 WebDAV 恢复。")
+    End Sub
+
+    Private Sub RunPcluSync(Action As Action, SuccessText As String)
+        RunInNewThread(
+            Sub()
+                Try
+                    Action()
+                    RunInUi(Sub() Hint(SuccessText, HintType.Green))
+                Catch ex As Exception
+                    Logger.Warn(ex, "PCLU WebDAV 同步失败")
+                    RunInUi(Sub() Hint("WebDAV 同步失败：" & ex.Message, HintType.Red))
+                End Try
+            End Sub, "PCLU WebDAV Sync", ThreadPriority.BelowNormal)
     End Sub
     Public Sub Reload()
         SettingService.RefreshSettings(Me)

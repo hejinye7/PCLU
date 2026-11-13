@@ -2,9 +2,9 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.7",
-  "versionCode": 429,
-  "releaseNotes": "PCLU 1.0.7 测试更新：验证启动器内部更新、替换与自动重启流程。",
+  "version": "1.0.0",
+  "versionCode": 431,
+  "releaseNotes": "PCLU 1.0.0：新增用户自填 WebDAV 同步账号，可同步启动器设置和社区资源收藏；主窗口左下角固定显示 PCLU 版本号。",
   "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
   "downloadUrls": [
     "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",

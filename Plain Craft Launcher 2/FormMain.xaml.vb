@@ -11,6 +11,10 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 431 Then 'Release 1.0.0
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：用户可填写 WebDAV 地址、账号和密码，同步启动器设置和社区资源收藏"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：主窗口左下角固定显示 PCLU 版本号"))
+            End If
             If LastVersion < 429 Then 'Release 1.0.7
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "测试：验证 PCLU 内部更新、替换与自动重启流程"))
             End If
@@ -124,6 +128,10 @@ Public Class FormMain
             '3：BUG+ IMP* FEAT-
             '2：BUG* IMP-
             '1：BUG-
+            If LastVersion < 432 Then 'Snapshot 1.0.0
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：用户可填写 WebDAV 地址、账号和密码，同步启动器设置和社区资源收藏"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：主窗口左下角固定显示 PCLU 版本号"))
+            End If
             If LastVersion < 430 Then 'Snapshot 1.0.7
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "测试：验证 PCLU 内部更新、替换与自动重启流程"))
             End If
@@ -359,6 +367,7 @@ Public Class FormMain
         [AddHandler](DragDrop.DragOverEvent, New DragEventHandler(AddressOf HandleDrag), handledEventsToo:=True)
         '加载 UI
         InitializeComponent()
+        LabVersionFooter.Text = "PCLU " & VersionBaseName
         Opacity = 0
         '开启管理员权限下的文件拖拽
         If WindowsUtils.HasAdminRole() Then
