@@ -149,6 +149,8 @@ Public Class Settings
         New Setting("UiBackgroundOpacity", 1000, OnChanged:=AddressOf FormMain.UpdateBackgroundAndTitleBar),
         New Setting("UiBackgroundBlur", 0, OnChanged:=AddressOf FormMain.UpdateBackgroundAndTitleBar),
         New Setting("UiBackgroundSuit", 0, OnChanged:=AddressOf FormMain.UpdateBackgroundAndTitleBar),
+        New Setting("PcluThemeBackground", ""),
+        New Setting("PcluThemeVideo", False),
         New Setting("UiCustomType", 0, OnChanged:=AddressOf PageSetupUI.OnMainPageTypeChanged),
         New Setting("UiCustomPreset", 0),
         New Setting("UiCustomNet", ""),

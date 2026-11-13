@@ -684,8 +684,8 @@ Restart:
             Dim NewProgress As Double = LoaderTaskbarProgressGet()
             '若单个任务已中止，或全部任务已完成，则刷新并移除
             For Each Task In LoaderTaskbar
-                If LoaderTaskbar.All(Function(l) l.State <> LoadState.Loading) OrElse
-                   (Task.State = LoadState.Waiting OrElse Task.State = LoadState.Canceled) Then
+                If Task.State = LoadState.Finished OrElse Task.State = LoadState.Canceled OrElse
+                   (Task.State <> LoadState.Failed AndAlso LoaderTaskbar.All(Function(l) l.State <> LoadState.Loading)) Then
                     FrmSpeedLeft?.TaskRefresh(Task)
                     LoaderTaskbar.Remove(Task)
                     Logger.Info($"{Task.Name} 已移出任务列表")

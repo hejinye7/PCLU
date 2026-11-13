@@ -1,5 +1,8 @@
 Public Module ModDownloadLib
 
+    Private ReadOnly InstallTargets As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly InstallTargetsLock As New Object
+
 #Region "Minecraft 下载"
 
     ''' <summary>
@@ -2050,15 +2053,34 @@ Retry:
     ''' 进行合并安装。返回是否已经开始安装。
     ''' </summary>
     Public Function McInstallStart(Request As McInstallRequest) As Boolean
+        Dim InstallKey As String = PathUtils.ForCompare(Request.InstanceFolder).TrimEnd("\"c)
+        SyncLock InstallTargetsLock
+            If Not InstallTargets.Add(InstallKey) Then
+                Hint("这个实例已有安装任务正在运行，请在任务完成后重试。", HintType.Blue)
+                Return False
+            End If
+        End SyncLock
         Try
-            Dim Loader As New LoaderCombo(Of String)(Request.NewInstanceName & " 安装", McInstallLoadersGet(Request)) With {.OnStateChanged = AddressOf McInstallState}
-            '启动
-            Loader.Start(Request.InstanceFolder)
+            Dim Loader As New LoaderCombo(Of String)(Request.NewInstanceName & " 安装", McInstallLoadersGet(Request)) With {
+                .OnStateChanged = Sub(Task)
+                                      McInstallState(Task)
+                                      If Task.State = LoadState.Finished Then
+                                          SyncLock InstallTargetsLock
+                                              InstallTargets.Remove(InstallKey)
+                                          End SyncLock
+                                      End If
+                                  End Sub
+            }
             LoaderTaskbarAdd(Loader)
+            'Register before starting so a fast task cannot finish before the task manager sees it.
+            Loader.Start(Request.InstanceFolder)
             FrmMain.BtnExtraDownload.ShowRefresh()
             FrmMain.BtnExtraDownload.Ribble()
             Return True
         Catch ex As Exception
+            SyncLock InstallTargetsLock
+                InstallTargets.Remove(InstallKey)
+            End SyncLock
             Logger.Error(ex, "开始合并安装失败")
             Return False
         End Try
@@ -2238,7 +2260,7 @@ Retry:
                 Hint(Loader.Name & "成功！", HintType.Green)
                 'TODO: 自动选择安装成功的版本
             Case LoadState.Failed
-                MyMsgBox(Loader.Error.GetDisplay(True), Loader.Name & "失败", IsWarn:=True)
+                Hint(Loader.Name & "失败，详情已保留在任务管理中。", HintType.Red)
             Case LoadState.Canceled
                 Hint(Loader.Name & "已取消！", HintType.Blue)
             Case LoadState.Loading
@@ -2262,6 +2284,11 @@ Retry:
                 End If
             Catch ex As Exception
                 Logger.Warn(ex, "下载失败或取消后清理版本文件夹失败")
+            Finally
+                Dim InstallKey = PathUtils.ForCompare(CStr(Loader.Input)).TrimEnd("\"c)
+                SyncLock InstallTargetsLock
+                    InstallTargets.Remove(InstallKey)
+                End SyncLock
             End Try
         End Sub)
     End Sub

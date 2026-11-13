@@ -29,11 +29,7 @@ Public Class PageSetupUI
 
         SliderLoad()
 
-        If BuildType = BuildTypes.Release Then PanLauncherHide.Visibility = Visibility.Visible
-
         '设置解锁
-        If Not RadioLauncherTheme8.IsEnabled Then LabLauncherTheme8Copy.ToolTip = $"累积赞助达到 ¥23.33 后，在爱发电私信发送【土豆 {Identify}】以解锁。" & vbCrLf & "右键打开赞助页面，如果觉得 PCL 做得还不错就支持一下吧 =w=！"
-        RadioLauncherTheme8.ToolTip = $"累积赞助达到 ¥23.33 后，在爱发电私信发送【土豆 {Identify}】以解锁"
         If Not RadioLauncherTheme9.IsEnabled Then LabLauncherTheme9Copy.ToolTip = "· 反馈一个 Bug，在标记为 [完成] 后回复识别码要求解锁（右键打开反馈页面）" & vbCrLf & "· 提交一个 Pull Request 或主页预设，在标记为 [完成] 后回复识别码要求解锁"
         RadioLauncherTheme9.ToolTip = "· 反馈一个 Bug，在标记为 [完成] 后回复识别码要求解锁" & vbCrLf & "· 提交一个 Pull Request 或主页预设，在标记为 [完成] 后回复识别码要求解锁"
         '极客蓝的处理在 ThemeCheck 中
@@ -103,6 +99,8 @@ Public Class PageSetupUI
         OpenExplorer(Paths.Base & "PCL\Pictures\")
     End Sub
     Private Sub BtnBackgroundRefresh_Click(sender As Object, e As EventArgs) Handles BtnBackgroundRefresh.Click
+        Settings.Set("PcluThemeBackground", "")
+        Settings.Set("PcluThemeVideo", False)
         BackgroundRefresh(True, True)
     End Sub
     Public Sub BackgroundRefreshUI(Show As Boolean, Count As Integer)
@@ -124,6 +122,9 @@ Public Class PageSetupUI
     End Sub
     Private Sub BtnBackgroundClear_Click(sender As Object, e As EventArgs) Handles BtnBackgroundClear.Click
         If MyMsgBox("即将删除背景图片文件夹中的所有文件。" & vbCrLf & "此操作不可撤销，是否确定？", "警告",, "取消", IsWarn:=True) = 1 Then
+            Settings.Set("PcluThemeBackground", "")
+            Settings.Set("PcluThemeVideo", False)
+            FrmMain.SetThemeVideo(Nothing)
             DirectoryUtils.Delete(Paths.Base & "PCL\Pictures")
             BackgroundRefresh(False, True)
             Hint("背景图片已清空！", HintType.Green)
@@ -136,6 +137,21 @@ Public Class PageSetupUI
     ''' <param name="Refresh">是否刷新图片显示。</param>
     Public Shared Sub BackgroundRefresh(IsHint As Boolean, Refresh As Boolean)
         Try
+
+            'A downloaded PCLU theme takes precedence over the loose background folder.
+            Dim ThemePath As String = Settings.Get(Of String)("PcluThemeBackground")
+            If Not String.IsNullOrWhiteSpace(ThemePath) AndAlso FileUtils.Exists(ThemePath) Then
+                If Refresh Then
+                    If Settings.Get(Of Boolean)("PcluThemeVideo") Then
+                        FrmMain.SetThemeVideo(ThemePath)
+                    Else
+                        FrmMain.SetThemeImage(ThemePath)
+                    End If
+                End If
+                If Not IsNothing(FrmSetupUI) Then FrmSetupUI.BackgroundRefreshUI(True, 1)
+                Return
+            End If
+            If Not IsNothing(FrmMain) Then FrmMain.SetThemeVideo(Nothing)
 
             '获取可用的图片文件
             DirectoryUtils.Create(Paths.Base & "PCL\Pictures\")
@@ -178,6 +194,43 @@ Public Class PageSetupUI
         Catch ex As Exception
             Logger.Error(ex, "刷新背景图片时出现未知错误")
         End Try
+    End Sub
+
+    Private Sub BtnThemeDownload_Click(sender As Object, e As EventArgs) Handles BtnThemeCoast.Click, BtnThemeMountain.Click, BtnThemeForest.Click, BtnThemeVideo.Click
+        Dim ThemeId As String = CStr(DirectCast(sender, FrameworkElement).Tag)
+        Dim IsVideo As Boolean = ThemeId = "video"
+        Dim FileName As String = If(IsVideo, "background.mp4", "background.jpg")
+        Dim Url As String = $"https://raw.githubusercontent.com/hejinye7/PCLlife/main/ThemePacks/{ThemeId}/{FileName}"
+        Dim Target As String = Paths.Base & $"PCL\Themes\{ThemeId}\{FileName}"
+        RunInNewThread(
+            Sub()
+                Try
+                    DirectoryUtils.Create(PathUtils.RemoveLastPart(Target))
+                    NetDownloadByClient(Url, Target, SimulateBrowserHeaders:=True)
+                    If IsVideo Then
+                        NetDownloadByClient($"https://raw.githubusercontent.com/hejinye7/PCLlife/main/ThemePacks/{ThemeId}/background.jpg",
+                                             Paths.Base & $"PCL\Themes\{ThemeId}\background.jpg", SimulateBrowserHeaders:=True)
+                    End If
+                    RunInUi(
+                        Sub()
+                            Settings.Set("PcluThemeBackground", Target)
+                            Settings.Set("PcluThemeVideo", IsVideo)
+                            If IsVideo Then
+                                FrmMain.SetThemeVideo(Target)
+                            Else
+                                FrmMain.SetThemeImage(Target)
+                            End If
+                            Hint("主题包已下载并应用", HintType.Green)
+                        End Sub)
+                Catch ex As Exception
+                    Logger.Error(ex, "下载 PCLU 主题包失败")
+                    RunInUi(Sub() Hint("主题包下载失败，请检查网络后重试", HintType.Red))
+                End Try
+            End Sub, "PCLU Theme Download", ThreadPriority.BelowNormal)
+    End Sub
+
+    Private Sub BtnThemeFolder_Click(sender As Object, e As EventArgs) Handles BtnThemeFolder.Click
+        OpenExplorer(Paths.Base & "PCL\Themes\")
     End Sub
 
     '顶部栏

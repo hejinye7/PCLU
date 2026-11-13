@@ -11,6 +11,13 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 433 Then 'Release 1.0.0.1
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：可下载海岸、山湖、森林图片主题包和循环视频主题包"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：主题透明度、背景柔化和氛围色设置"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：任务管理器同名任务卡片冲突，失败任务会保留以便查看"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "优化：并行安装任务登记和配置文件写入，避免相同实例重复安装"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "移除：联机高级设置和个性化基础区的赞助开发提示"))
+            End If
             If LastVersion < 431 Then 'Release 1.0.0
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：用户可填写 WebDAV 地址、账号和密码，同步启动器设置和社区资源收藏"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：主窗口左下角固定显示 PCLU 版本号"))
@@ -123,6 +130,12 @@ Public Class FormMain
                 BugCount += 21
             End If
         Else
+            If LastVersion < 434 Then 'Snapshot 1.0.0.1
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：可下载的图片与循环视频主题包，以及主题外观设置"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：任务管理器同名任务卡片冲突，失败任务会保留以便查看"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "优化：并行安装任务登记和配置文件写入，避免相同实例重复安装"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "移除：联机高级设置和个性化基础区的赞助开发提示"))
+            End If
             '5：          FEAT+
             '4：     IMP+ FEAT*
             '3：BUG+ IMP* FEAT-
@@ -331,6 +344,7 @@ Public Class FormMain
 
     '窗口加载
     Private IsWindowLoadFinished As Boolean = False
+    Private ThemeVideoFallback As String
     Public Sub New()
         ApplicationStartTick = GetTimeMs()
         '窗体参数初始化
@@ -731,12 +745,15 @@ Public Class FormMain
         Logger.Info("从设置更新背景图片与标题栏样式")
         '背景图片透明度
         ImgBack.Opacity = Settings.Get(Of Integer)("UiBackgroundOpacity") / 1000
+        VideoBack.Opacity = ImgBack.Opacity
         '背景图片模糊
         Dim BlurRadius As Double = Settings.Get(Of Integer)("UiBackgroundBlur") + 1
         If BlurRadius = 1 Then
             ImgBack.Effect = Nothing
+            VideoBack.Effect = Nothing
         Else
             ImgBack.Effect = New Effects.BlurEffect With {.Radius = BlurRadius}
+            VideoBack.Effect = New Effects.BlurEffect With {.Radius = BlurRadius}
         End If
         ImgBack.Margin = New Thickness(-BlurRadius / 1.8)
         '背景图片适应方式
@@ -845,6 +862,45 @@ Public Class FormMain
         LabTitleLogo.Text = Settings.Get(Of String)("UiLogoText")
         '标题栏文本是否居左
         PanTitleMain.ColumnDefinitions(0).Width = New GridLength(If(Settings.Get(Of Boolean)("UiLogoLeft") AndAlso Settings.Get(Of Integer)("UiLogoType") = 0, 0, 1), GridUnitType.Star)
+    End Sub
+
+    Public Sub SetThemeImage(FilePath As String)
+        VideoBack.Stop()
+        VideoBack.Source = Nothing
+        VideoBack.Visibility = Visibility.Collapsed
+        ImgBack.Background = New MyBitmap(FilePath)
+        ImgBack.Visibility = Visibility.Visible
+        UpdateBackgroundAndTitleBar()
+    End Sub
+
+    Public Sub SetThemeVideo(FilePath As String)
+        If String.IsNullOrWhiteSpace(FilePath) OrElse Not FileUtils.Exists(FilePath) Then
+            VideoBack.Stop()
+            VideoBack.Source = Nothing
+            VideoBack.Visibility = Visibility.Collapsed
+            Return
+        End If
+        ImgBack.Background = Nothing
+        ImgBack.Visibility = Visibility.Collapsed
+        ThemeVideoFallback = System.IO.Path.ChangeExtension(FilePath, ".jpg")
+        VideoBack.Stop()
+        VideoBack.Source = New Uri(FilePath, UriKind.Absolute)
+        VideoBack.Visibility = Visibility.Visible
+        VideoBack.Position = TimeSpan.Zero
+        VideoBack.Play()
+        UpdateBackgroundAndTitleBar()
+    End Sub
+
+    Private Sub VideoBack_MediaEnded(sender As Object, e As RoutedEventArgs) Handles VideoBack.MediaEnded
+        VideoBack.Position = TimeSpan.Zero
+        VideoBack.Play()
+    End Sub
+
+    Private Sub VideoBack_MediaFailed(sender As Object, e As ExceptionRoutedEventArgs) Handles VideoBack.MediaFailed
+        Logger.Warn(e.ErrorException, "PCLU 视频主题无法播放")
+        VideoBack.Visibility = Visibility.Collapsed
+        If Not String.IsNullOrWhiteSpace(ThemeVideoFallback) AndAlso FileUtils.Exists(ThemeVideoFallback) Then ImgBack.Background = New MyBitmap(ThemeVideoFallback)
+        ImgBack.Visibility = Visibility.Visible
     End Sub
 
 #End Region
@@ -1717,7 +1773,8 @@ Public Class FormMain
         PageChange(PageType.TaskManager)
     End Sub
     Private Function BtnExtraDownload_ShowCheck() As Boolean
-        Return HasDownloadingTask() AndAlso Not PageCurrent = PageType.TaskManager
+        Return (HasDownloadingTask() OrElse LoaderTaskbar.Any(Function(Task) Task.Show AndAlso Task.State = LoadState.Failed)) AndAlso
+               Not PageCurrent = PageType.TaskManager
     End Function
 
     '投降

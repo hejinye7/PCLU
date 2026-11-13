@@ -1,8 +1,10 @@
 # Plain Craft Launcher Ultra（PCLU）
 
-PCLU 的中文名为 **PCL 旗舰版**，是基于 Plain Craft Launcher 的第三方修改版，面向快速启动、稳定下载和社区功能整合。
+PCLU 的中文名为 **PCL 旗舰版**，是个人开发者维护的 Plain Craft Launcher 第三方修改版。
 
-项目负责人：PCLU 维护团队（头像与署名见启动器“关于与鸣谢”页面）。
+PCLU 与原版 Plain Craft Launcher 的开发者及发行方无隶属、授权或合作关系。旧版本曾出现下载页面无响应、任务管理界面异常、并行安装冲突以及下载末段速度显示偏低等问题；1.0.0.1 修复和优化了下载任务管理及并发安装流程，末段速度偏低问题仍需结合实际下载任务观察。PCLU 不是 Minecraft 官方产品，亦未获 Mojang 或 Microsoft 批准或与其关联。
+
+项目维护：个人开发者（署名及鸣谢见启动器“关于与鸣谢”页面）。
 
 感谢龙腾猫跃、HerobrineXia、BMCLAPI、MC 百科、EasyTier 以及所有 PCL 社区贡献者。
 

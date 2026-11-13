@@ -30,7 +30,7 @@ Public Class PageSpeedLeft
     End Sub
 
     '定时器任务
-    Private ReadOnly RightCards As New Dictionary(Of String, MyCard)
+    Private ReadOnly RightCards As New Dictionary(Of Integer, MyCard)
     Private Sub Watcher()
         If Not FrmMain.PageCurrent = FormMain.PageType.TaskManager Then Return
         Try
@@ -71,9 +71,9 @@ Public Class PageSpeedLeft
         Try
             '获取实际加载器列表
             Dim LoaderList As List(Of LoaderBase) = CType(Loader, Object).GetLoaderList()
-            If RightCards.ContainsKey(Loader.Name) Then
+            If RightCards.ContainsKey(Loader.Uuid) Then
                 '已有此卡片
-                Dim Card As MyCard = RightCards(Loader.Name)
+                Dim Card As MyCard = RightCards(Loader.Uuid)
                 Dim NewValue As Double = Loader.Progress + Loader.State
                 If Val(Card.Tag) = NewValue Then Return
                 Card.Tag = NewValue
@@ -185,7 +185,7 @@ Public Class PageSpeedLeft
                         AddAiDownloadGlow(Card)
                     End If
                     FrmSpeedRight.PanMain.Children.Insert(0, Card)
-                    RightCards.Add(Loader.Name, Card)
+                    RightCards.Add(Loader.Uuid, Card)
                     Logger.Info($"新建任务管理卡片：{Loader.Name}")
                     '添加取消按钮
                     Dim Cancel As New MyIconButton With {.Name = "BtnCancel", .Logo = "F1 M2,0 L0,2 8,10 0,18 2,20 10,12 18,20 20,18 12,10 20,2 18,0 10,8 2,0Z", .Height = 20, .Margin = New Thickness(0, 10, 10, 0), .LogoScale = 1.1, .HorizontalAlignment = HorizontalAlignment.Right, .VerticalAlignment = VerticalAlignment.Top}
@@ -194,7 +194,7 @@ Public Class PageSpeedLeft
                     Sub(sender As MyIconButton, e As EventArgs)
                         AniDispose(sender, False)
                         AniDispose(Card, True, Sub() If FrmSpeedRight.PanMain.Children.Count = 0 AndAlso FrmMain.PageCurrent = FormMain.PageType.TaskManager Then FrmMain.PageBack())
-                        RightCards.Remove(Loader.Name)
+                        RightCards.Remove(Loader.Uuid)
                         LoaderTaskbar.Remove(Loader)
                         Logger.Info($"关闭任务管理卡片：{Loader.Name}，且移出任务列表")
                         RunInThread(Sub() Loader.Cancel())
@@ -266,13 +266,13 @@ Public Class PageSpeedLeft
     End Function
 
     Public Sub TaskRemove(Loader As Object)
-        If RightCards.ContainsKey(Loader.Name) Then
+        If RightCards.ContainsKey(Loader.Uuid) Then
             RunInUiWait(
             Sub()
                 '移除已有的卡片
-                Dim Card As Grid = RightCards(Loader.Name)
+                Dim Card As Grid = RightCards(Loader.Uuid)
                 FrmSpeedRight.PanMain.Children.Remove(Card)
-                RightCards.Remove(Loader.Name)
+                RightCards.Remove(Loader.Uuid)
                 Logger.Info($"移除任务管理卡片：{Loader.Name}")
             End Sub)
         End If
