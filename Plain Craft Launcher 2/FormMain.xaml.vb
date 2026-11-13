@@ -11,6 +11,10 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 437 Then 'Release 1.0.0.3
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：LabyMod 安装任务并发保存配置时发生文件已存在错误"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(2, "优化：短时间内重复搜索社区资源时复用列表响应"))
+            End If
             If LastVersion < 435 Then 'Release 1.0.0.2
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：下载社区资源列表时，收藏按钮颜色初始化触发空引用并导致启动器崩溃"))
             End If
@@ -133,6 +137,10 @@ Public Class FormMain
                 BugCount += 21
             End If
         Else
+            If LastVersion < 438 Then 'Snapshot 1.0.0.3
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：LabyMod 安装任务并发保存配置时发生文件已存在错误"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(2, "优化：短时间内重复搜索社区资源时复用列表响应"))
+            End If
             If LastVersion < 436 Then 'Snapshot 1.0.0.2
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：下载社区资源列表时，收藏按钮颜色初始化触发空引用并导致启动器崩溃"))
             End If

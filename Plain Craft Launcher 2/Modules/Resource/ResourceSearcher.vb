@@ -1,6 +1,36 @@
 Public Class ResourceSearcher
     Private Const RESULT_PAGE_SIZE = 40
     Private Const MSG_NO_CHINESE_RESULT As String = "无搜索结果，请尝试搜索其英文名称"
+    Private Shared ReadOnly SearchCacheLock As New Object
+    Private Shared ReadOnly SearchCache As New Dictionary(Of String, CachedSearchResponse)(StringComparer.Ordinal)
+
+    Private Class CachedSearchResponse
+        Public ExpiresAt As DateTime
+        Public Json As JToken
+    End Class
+
+    Private Shared Function GetSearchResponse(Address As String) As JToken
+        SyncLock SearchCacheLock
+            Dim Cached As CachedSearchResponse = Nothing
+            If SearchCache.TryGetValue(Address, Cached) Then
+                If Cached.ExpiresAt > DateTime.UtcNow Then Return Cached.Json.DeepClone()
+                SearchCache.Remove(Address)
+            End If
+        End SyncLock
+
+        Dim Result = DlModRequest(Address)
+        SyncLock SearchCacheLock
+            For Each ExpiredAddress In SearchCache.Where(Function(Entry) Entry.Value.ExpiresAt <= DateTime.UtcNow).Select(Function(Entry) Entry.Key).ToList()
+                SearchCache.Remove(ExpiredAddress)
+            Next
+            If SearchCache.Count >= 64 Then
+                Dim OldestAddress = SearchCache.OrderBy(Function(Entry) Entry.Value.ExpiresAt).First().Key
+                SearchCache.Remove(OldestAddress)
+            End If
+            SearchCache(Address) = New CachedSearchResponse With {.ExpiresAt = DateTime.UtcNow.AddSeconds(30), .Json = Result.DeepClone()}
+        End SyncLock
+        Return Result
+    End Function
 
     '输入
     Public Class SearchRequest
@@ -312,7 +342,7 @@ NextPage:
                         '获取工程列表
                         Dim CurseForgeUrl As String = Request.GetCurseForgeAddress(If(CurseForgeAltSearchText, RawSearchText), IgnoreModLoaderFilter)
                         Logger.Info($"开始 CurseForge 搜索：{CurseForgeUrl}")
-                        Dim RequestResult As JObject = DlModRequest(CurseForgeUrl)
+                        Dim RequestResult As JObject = CType(GetSearchResponse(CurseForgeUrl), JObject)
                         Dim ProjectList As New List(Of ResourceProject)
                         For Each JsonEntry As JObject In RequestResult("data")
                             Dim Project As New ResourceProject(JsonEntry)
@@ -343,7 +373,7 @@ NextPage:
                     Try
                         Dim ModrinthUrl As String = Request.GetModrinthAddress(If(ModrinthAltSearchText, RawSearchText), IgnoreModLoaderFilter)
                         Logger.Info($"开始 Modrinth 搜索：{ModrinthUrl}")
-                        Dim RequestResult As JObject = DlModRequest(ModrinthUrl)
+                        Dim RequestResult As JObject = CType(GetSearchResponse(ModrinthUrl), JObject)
                         Dim ProjectList As New List(Of ResourceProject)
                         For Each JsonEntry As JObject In RequestResult("hits")
                             ProjectList.Add(New ResourceProject(JsonEntry))

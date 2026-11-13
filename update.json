@@ -2,9 +2,9 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.0.2",
-  "versionCode": 435,
-  "releaseNotes": "PCLU 1.0.0.2：修复下载社区资源列表时收藏按钮颜色初始化触发空引用并导致启动器崩溃。",
+  "version": "1.0.0.3",
+  "versionCode": 437,
+  "releaseNotes": "PCLU 1.0.0.3：修复 LabyMod 安装时配置文件并发写入失败；短时间重复搜索社区资源可复用列表响应。",
   "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
   "downloadUrls": [
     "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",

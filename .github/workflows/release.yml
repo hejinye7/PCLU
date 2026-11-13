@@ -17,6 +17,10 @@ jobs:
         with:
           submodules: true
 
+      - name: Patch atomic config writes
+        shell: pwsh
+        run: git apply --unidiff-zero --directory=MeloongCore .github/patches/meloongcore-atomic-write.patch
+
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 

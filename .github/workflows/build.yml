@@ -26,6 +26,9 @@ jobs:
         fetch-depth: 1
         submodules: true
 
+    - name: Patch atomic config writes
+      run: git apply --unidiff-zero --directory=MeloongCore .github/patches/meloongcore-atomic-write.patch
+
     - name: Set Describe
       shell: bash
       run: |

@@ -1,0 +1,70 @@
+diff --git a/Shared/Utils/FileUtils.cs b/Shared/Utils/FileUtils.cs
+index 4e9a547..8b5afac 100644
+--- a/Shared/Utils/FileUtils.cs
++++ b/Shared/Utils/FileUtils.cs
+@@ -1,0 +2 @@ using System.IO.Compression;
++using System.Security.Cryptography;
+@@ -4,0 +6 @@ public static class FileUtils {
++    private static readonly ConcurrentDictionary<string, object> AtomicWriteLocks = new(StringComparer.OrdinalIgnoreCase);
+@@ -119,4 +121,27 @@
+-            if (FileUtils.Exists(filePath)) {
+-                File.Replace(PathUtils.ForApi(tempPath), PathUtils.ForApi(filePath), null, true);
+-            } else {
+-                File.Move(PathUtils.ForApi(tempPath), PathUtils.ForApi(filePath));
++            string normalizedPath = Path.GetFullPath(filePath);
++            string mutexSuffix;
++            using (var sha256 = SHA256.Create()) {
++                mutexSuffix = string.Concat(sha256.ComputeHash(Encoding.UTF8.GetBytes(normalizedPath.ToUpperInvariant()))
++                    .Select(value => value.ToString("x2")));
++            }
++            using var processLock = new Mutex(false, $"MeloongCore.AtomicWrite.{mutexSuffix}");
++            bool acquired = false;
++            try {
++                try {
++                    processLock.WaitOne();
++                    acquired = true;
++                } catch (AbandonedMutexException) {
++                    acquired = true;
++                }
++                lock (AtomicWriteLocks.GetOrAdd(normalizedPath, _ => new())) {
++                    // Retry in case another process creates the destination during the commit.
++                    Retrier.Attempt(delay: _ => TimeSpan.FromMilliseconds(50), isRetryAllowed: ex => ex is IOException, action: _ => {
++                        if (FileUtils.Exists(filePath)) {
++                            File.Replace(PathUtils.ForApi(tempPath), PathUtils.ForApi(filePath), null, true);
++                        } else {
++                            File.Move(PathUtils.ForApi(tempPath), PathUtils.ForApi(filePath));
++                        }
++                    });
++                }
++            } finally {
++                if (acquired) processLock.ReleaseMutex();
+diff --git a/Tests/Utils/FileUtilsTest.cs b/Tests/Utils/FileUtilsTest.cs
+index d8efd1c..018728e 100644
+--- a/Tests/Utils/FileUtilsTest.cs
++++ b/Tests/Utils/FileUtilsTest.cs
+@@ -3,0 +4,25 @@ public class FileUtilsTest : TestWithFolder {
++    #region 写入
++
++    [Test]
++    public async Task 原子写入_并发创建同一文件() {
++        const int writerCount = 16;
++        string output = Path.Combine(tempFolder, "config.json");
++        using var ready = new CountdownEvent(writerCount);
++        using var start = new ManualResetEventSlim(false);
++        Task[] writers = Enumerable.Range(0, writerCount).Select(index => Task.Run(() => {
++            ready.Signal();
++            start.Wait();
++            FileUtils.WriteAtomic(output, $"{{\"writer\":{index}}}");
++        })).ToArray();
++
++        ready.Wait();
++        start.Set();
++        await Task.WhenAll(writers);
++
++        Newtonsoft.Json.Linq.JObject result = FileUtils.ReadAsJson<Newtonsoft.Json.Linq.JObject>(output)!;
++        await Assert.That(result.Value<int>("writer")).IsBetween(0, writerCount - 1);
++        await Assert.That(DirectoryUtils.EnumerateFiles(tempFolder, searchPattern: "config.json.*.tmp")).IsEmpty();
++    }
++
++    #endregion
++
