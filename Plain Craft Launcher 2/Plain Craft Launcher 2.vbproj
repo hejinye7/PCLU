@@ -257,6 +257,7 @@
     <Compile Include="Modules\ModDevelop.vb" />
     <Compile Include="Modules\Minecraft\ModWatcher.vb" />
     <Compile Include="Modules\ModSecret.vb" />
+    <Compile Include="Modules\ModTerracotta.vb" />
     <Compile Include="Pages\PageDownload\Resource\PageResource.xaml.vb">
       <DependentUpon>PageResource.xaml</DependentUpon>
     </Compile>
@@ -281,6 +282,9 @@
     </Compile>
     <Compile Include="Pages\PageDownload\PageDownloadInstall.xaml.vb">
       <DependentUpon>PageDownloadInstall.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\PageDownload\PageDownloadCommunityClient.xaml.vb">
+      <DependentUpon>PageDownloadCommunityClient.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\PageDownload\PageDownloadModify.vb" />
     <Compile Include="Pages\PageDownload\Resource\PageDownloadCompDetail.xaml.vb">
@@ -529,6 +533,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Pages\PageDownload\PageDownloadInstall.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Pages\PageDownload\PageDownloadCommunityClient.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -838,6 +846,9 @@
     <Resource Include="Images\Heads\Logo.png" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Images\Heads\PCLUltraLeader.jpg" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Resources\transformer.jar" />
   </ItemGroup>
   <ItemGroup>
@@ -951,4 +962,16 @@
 
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.WinFX.targets" Condition="Exists('$(MSBuildToolsPath)\Microsoft.WinFX.targets')" />
+  <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk.WindowsDesktop\targets\Microsoft.WinFX.targets" Condition="!Exists('$(MSBuildToolsPath)\Microsoft.WinFX.targets') And Exists('$(MSBuildSDKsPath)\Microsoft.NET.Sdk.WindowsDesktop\targets\Microsoft.WinFX.targets')" />
+  <Target Name="AddCoreLibToReferencePath" AfterTargets="ResolveAssemblyReferences" BeforeTargets="MarkupCompilePass1">
+    <PropertyGroup>
+      <_PcllReferenceDir>$(TargetFrameworkRootPath)\.NETFramework\v4.8\</_PcllReferenceDir>
+      <_PcllReferenceDir Condition="!Exists('$(_PcllReferenceDir)mscorlib.dll')">$(TargetFrameworkRootPath)/.NETFramework/v4.8/</_PcllReferenceDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <ReferencePath Include="$(_PcllReferenceDir)mscorlib.dll" Condition="Exists('$(_PcllReferenceDir)mscorlib.dll')" />
+      <ReferencePath Include="$(_PcllReferenceDir)Microsoft.VisualBasic.dll" Condition="Exists('$(_PcllReferenceDir)Microsoft.VisualBasic.dll')" />
+    </ItemGroup>
+  </Target>
 </Project>

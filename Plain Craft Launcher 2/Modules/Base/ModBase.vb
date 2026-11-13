@@ -6,12 +6,12 @@ Public Module ModBase
 #Region "声明"
 
     '下列版本信息由更新器自动修改
-    Public Const VersionBaseName As String = "2.99.0.1" '显示用版本名
+    Public Const VersionBaseName As String = "1.0.1" 'PCLU 显示用版本名
     Public Const CommitHash As String = "" 'Commit Hash，由 GitHub Workflow 自动替换
 #If RELEASE Then
-    Public Const VersionCode As Integer = 415 '正式版
+    Public Const VersionCode As Integer = 417 '正式版
 #Else
-    Public Const VersionCode As Integer = 416 '快照版
+    Public Const VersionCode As Integer = 418 '快照版
 #End If
 
     '版本信息
@@ -56,6 +56,9 @@ Public Module ModBase
     ''' 程序的打开计时。
     ''' </summary>
     Public ApplicationStartTick As Long = GetTimeMs()
+    Public ApplicationStartPhase1 As Long = 0
+    Public ApplicationStartPhase2 As Long = 0
+    Public ApplicationStartPhase3 As Long = 0
     ''' <summary>
     ''' 程序打开时的时间。
     ''' </summary>

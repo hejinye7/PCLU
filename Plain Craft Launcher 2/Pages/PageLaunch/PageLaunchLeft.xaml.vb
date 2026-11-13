@@ -644,6 +644,8 @@ Finish:
                 Else
                     CurrentState = 2
                 End If
+            ElseIf McInstanceSelected.State = McInstance.McInstanceState.Error Then
+                CurrentState = 4
             Else
                 CurrentState = 3
             End If
@@ -682,6 +684,13 @@ Finish:
                 FrmLaunchLeft.BtnLaunch.IsEnabled = True
                 FrmLaunchLeft.LabVersion.Text = McInstanceSelected.Name
                 'FrmLaunchLeft.BtnMore.Visibility = Visibility.Visible '由功能隐藏设置修改
+            Case 4
+                Logger.Info($"启动按钮：Minecraft 版本需要修复：{McInstanceSelected.PathVersion}")
+                FrmLaunchLeft.BtnLaunch.Text = "版本需要修复"
+                FrmLaunchLeft.BtnLaunch.IsEnabled = False
+                FrmLaunchLeft.BtnVersion.IsEnabled = True
+                FrmLaunchLeft.LabVersion.Text = McInstanceSelected.Name
+                FrmLaunchLeft.BtnMore.Visibility = Visibility.Collapsed
         End Select
 ExitRefresh:
         '功能隐藏

@@ -15,22 +15,24 @@
                             <ColumnDefinition />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="28" />
-                            <RowDefinition Height="7" />
-                            <RowDefinition Height="28" />
-                            <RowDefinition Height="7" />
+                            <RowDefinition Height="0" />
+                            <RowDefinition Height="0" />
+                            <RowDefinition Height="0" />
+                            <RowDefinition Height="0" />
                             <RowDefinition Height="27" />
                             <RowDefinition Height="27" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Text="文件下载源" Margin="0,0,25,0" />
-                        <local:MyComboBox x:Name="ComboDownloadSource" Grid.ColumnSpan="2" local:SettingService.Key="ToolDownloadSource" Grid.Column="1">
-                            <local:MyComboBoxItem Content="尽量使用镜像源" />
-                            <local:MyComboBoxItem Content="优先使用官方源，在加载缓慢时换用镜像源" IsSelected="True" />
-                            <local:MyComboBoxItem Content="尽量使用官方源" />
+                        <TextBlock Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Left" Text="文件下载源" Margin="0,0,25,0" />
+                        <local:MyComboBox x:Name="ComboDownloadSource" Grid.ColumnSpan="2" local:SettingService.Key="ToolDownloadSource" Grid.Column="1"
+                                          Visibility="Collapsed"
+                                          ToolTip="国内：OpenBMCLAPI、BMCLAPI、MCIM、腾讯云、阿里云、华为云。&#xa;海外：Mojang、Modrinth、CurseForge、Maven Central 与各加载器官方仓库。&#xa;线路异常时自动切换，并校验文件完整性。">
+                            <local:MyComboBoxItem Content="优先使用多线路加速，失败时切换官方源" />
+                            <local:MyComboBoxItem Content="自动选择官方源或多线路加速（推荐）" IsSelected="True" />
+                            <local:MyComboBoxItem Content="优先使用官方源，失败时切换加速线路" />
                         </local:MyComboBox>
-                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Text="版本列表源" Margin="0,0,25,0" Grid.Row="2" />
-                        <local:MyComboBox x:Name="ComboDownloadVersion" Grid.ColumnSpan="2" local:SettingService.Key="ToolDownloadVersion" Grid.Column="1" Grid.Row="2">
+                        <TextBlock Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Left" Text="版本列表源" Margin="0,0,25,0" Grid.Row="2" />
+                        <local:MyComboBox Visibility="Collapsed" x:Name="ComboDownloadVersion" Grid.ColumnSpan="2" local:SettingService.Key="ToolDownloadVersion" Grid.Column="1" Grid.Row="2">
                             <local:MyComboBoxItem Content="尽量使用镜像源（可能缺少刚刚更新的版本）" />
                             <local:MyComboBoxItem Content="优先使用官方源，在加载缓慢时换用镜像源" IsSelected="True" />
                             <local:MyComboBoxItem Content="尽量使用官方源" />
@@ -111,7 +113,7 @@
                         <ColumnDefinition Width="1*" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="28" />
+                        <RowDefinition Height="0" />
                         <RowDefinition Height="9" />
                         <RowDefinition Height="28" />
                         <RowDefinition Height="9" />
@@ -121,8 +123,8 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <TextBlock VerticalAlignment="Center" HorizontalAlignment="Left" Text="启动器更新" Margin="0,0,25,0" />
-                    <local:MyComboBox x:Name="ComboSystemUpdate" local:SettingService.Key="SystemSystemUpdate" Grid.Column="1">
+                    <TextBlock Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Left" Text="" Margin="0,0,25,0" />
+                    <local:MyComboBox Visibility="Collapsed" x:Name="ComboSystemUpdate" local:SettingService.Key="SystemSystemUpdate" Grid.Column="1">
                         <local:MyComboBoxItem Content="在有新版本时自动下载" x:Name="ItemSystemUpdateDownload" />
                         <local:MyComboBoxItem Content="在有新版本时显示提示" />
                         <local:MyComboBoxItem Content="仅在有重大漏洞更新时显示提示" />
@@ -150,7 +152,7 @@
                             <ColumnDefinition Width="Auto" SharedSizeGroup="Button" />
                             <ColumnDefinition Width="Auto" SharedSizeGroup="Button" />
                         </Grid.ColumnDefinitions>
-                        <local:MyButton Grid.Column="0" x:Name="BtnSystemUpdate" MinWidth="140" Text="检查更新" Padding="13,0" Margin="0,0,20,0" />
+                        <local:MyButton Grid.Column="0" x:Name="BtnSystemUpdate" Visibility="Collapsed" MinWidth="140" Text="" Padding="13,0" Margin="0,0,20,0" />
                         <local:MyButton Grid.Column="1" x:Name="BtnSystemSettingExp" MinWidth="140" Text="导出设置" Padding="13,0" Margin="0,0,20,0" />
                         <local:MyButton Grid.Column="2" x:Name="BtnSystemSettingImp" MinWidth="140" Text="导入设置" Padding="13,0" Margin="0,0,20,0" />
                     </Grid>

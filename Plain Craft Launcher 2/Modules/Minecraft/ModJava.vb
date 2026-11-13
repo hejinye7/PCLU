@@ -1,6 +1,11 @@
 Public Module ModJava
 
     ''' <summary>
+    ''' 便携启动器随身携带的 Java 根目录。
+    ''' </summary>
+    Public PortableJavaOverride As String = ""
+
+    ''' <summary>
     ''' 初始化 Java 列表。
     ''' 若没有任何可用的 Java，则触发搜索。
     ''' </summary>
@@ -279,6 +284,13 @@ Public Module ModJava
     ''' <returns>最适合的 Java。若找不到或失败则返回 null，除非取消否则不会抛出异常。</returns>
     Public Function SelectOrDownloadJava(Target As OneOf(Of ValueRange(Of Version), McInstance), TryFixOrHint As Boolean, Optional c As CancellationToken = Nothing, Optional p As ProgressProvider = Nothing) As Java
         Try
+            If PortableJavaOverride <> "" AndAlso DirectoryUtils.Exists(PortableJavaOverride) Then
+                Dim PortableJava = JavaUtils.SearchFoldersAsync(True, {PortableJavaOverride}, c, p?.SplitTo(1)).Run().FirstOrDefault()
+                If PortableJava IsNot Nothing Then
+                    Logger.Info("便携模式使用随身 Java：" & PortableJava.Folder)
+                    Return PortableJava
+                End If
+            End If
             If Target.Is(Of McInstance) Then MigrateInstanceJavaSettings(Target.As(Of McInstance), c, p?.SplitTo(0.2)) '迁移
             Dim Instance As McInstance = If(Target.Is(Of McInstance), Target.As(Of McInstance), Nothing)
             Select Case If(Instance Is Nothing, 0, Settings.Get(Of Integer)("VersionArgumentJavaV2", Instance))

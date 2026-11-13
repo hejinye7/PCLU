@@ -174,14 +174,10 @@ Public Class PageSelectRight
             Hint("该版本正在被修改，请稍后再选择！", HintType.Red)
             Return
         End If
-        If New McInstance(Instance.PathVersion).Check Then
-            '正常版本
-            McInstanceSelected = Instance
-            FrmMain.PageBack()
-        Else
-            '错误版本
-            PageInstanceOverall.OpenInstanceFolder(Instance)
-        End If
+        Dim IsErrorVersion As Boolean = Not New McInstance(Instance.PathVersion).Check
+        McInstanceSelected = Instance
+        FrmMain.PageBack()
+        If IsErrorVersion Then Hint("该版本存在错误，已禁止启动。请前往百宝箱进行修复！", HintType.Blue)
     End Sub
 
     Private Sub BtnDownload_Click(sender As Object, e As EventArgs) Handles BtnEmptyDownload.Click

@@ -19,6 +19,7 @@ Public Class PageSetupUI
 
         AniControlEnabled += 1
         Refresh() '#4826
+        StartupComparisonRefresh()
         AniControlEnabled -= 1
 
         '非重复加载部分
@@ -37,6 +38,32 @@ Public Class PageSetupUI
         RadioLauncherTheme9.ToolTip = "· 反馈一个 Bug，在标记为 [完成] 后回复识别码要求解锁" & vbCrLf & "· 提交一个 Pull Request 或主页预设，在标记为 [完成] 后回复识别码要求解锁"
         '极客蓝的处理在 ThemeCheck 中
 
+    End Sub
+
+    Private Sub StartupComparisonRefresh()
+        Dim OriginalMs As Integer = Math.Max(Settings.Get(Of Integer)("CacheStartupOriginalMs"), 1)
+        Dim CurrentMs As Integer = CInt(ApplicationStartPhase1 + ApplicationStartPhase2 + ApplicationStartPhase3)
+        If CurrentMs <= 0 Then CurrentMs = Settings.Get(Of Integer)("CacheStartupPcllMs")
+        LabStartupOriginal.Text = OriginalMs & " ms"
+        If CurrentMs <= 0 Then
+            LabStartupPcll.Text = "待测"
+            LabStartupDelta.Text = "重启一次后生成实测数据"
+            ScaleStartupOriginal.ScaleX = 1
+            ScaleStartupPcll.ScaleX = 0.08
+            Return
+        End If
+        LabStartupPcll.Text = CurrentMs & " ms"
+        Dim MaxMs As Double = Math.Max(OriginalMs, CurrentMs)
+        ScaleStartupOriginal.ScaleX = Math.Max(OriginalMs / MaxMs, 0.08)
+        ScaleStartupPcll.ScaleX = Math.Max(CurrentMs / MaxMs, 0.08)
+        Dim Delta As Double = (OriginalMs - CurrentMs) / CDbl(OriginalMs) * 100
+        If Math.Abs(Delta) < 0.1 Then
+            LabStartupDelta.Text = "两者基本持平"
+        ElseIf Delta > 0 Then
+            LabStartupDelta.Text = $"PCLU 快 {Delta:F1}%"
+        Else
+            LabStartupDelta.Text = $"PCLU 慢 {-Delta:F1}%"
+        End If
     End Sub
     Public Sub Refresh()
         Try
@@ -444,7 +471,7 @@ Refresh:
                 '顶部栏未被全部隐藏
                 FrmMain.PanTitleSelect.Visibility = Visibility.Visible
                 FrmMain.BtnTitleSelect1.Visibility = If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenPageDownload"), Visibility.Collapsed, Visibility.Visible)
-                FrmMain.BtnTitleSelect2.Visibility = Visibility.Collapsed 'If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenPageLink"), Visibility.Collapsed, Visibility.Visible)
+                FrmMain.BtnTitleSelect2.Visibility = If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenPageLink"), Visibility.Collapsed, Visibility.Visible)
                 FrmMain.BtnTitleSelect3.Visibility = If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenPageSetup"), Visibility.Collapsed, Visibility.Visible)
                 FrmMain.BtnTitleSelect4.Visibility = If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenPageOther"), Visibility.Collapsed, Visibility.Visible)
             End If
@@ -461,13 +488,13 @@ Refresh:
             If FrmSetupLeft IsNot Nothing Then
                 FrmSetupLeft.ItemLaunch.Visibility = If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenSetupLaunch"), Visibility.Collapsed, Visibility.Visible)
                 FrmSetupLeft.ItemUI.Visibility = If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenSetupUi"), Visibility.Collapsed, Visibility.Visible)
-                FrmSetupLeft.ItemLink.Visibility = Visibility.Collapsed 'If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenSetupLink"), Visibility.Collapsed, Visibility.Visible)
+                FrmSetupLeft.ItemLink.Visibility = If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenSetupLink"), Visibility.Collapsed, Visibility.Visible)
                 FrmSetupLeft.ItemSystem.Visibility = If(Not HiddenForceShow AndAlso Settings.Get(Of Boolean)("UiHiddenSetupSystem"), Visibility.Collapsed, Visibility.Visible)
                 '隐藏左边选择卡
                 Dim AvaliableCount As Integer = 0
                 If Not Settings.Get(Of Boolean)("UiHiddenSetupLaunch") Then AvaliableCount += 1
                 If Not Settings.Get(Of Boolean)("UiHiddenSetupUi") Then AvaliableCount += 1
-                'If Not Settings.Get(Of Boolean)("UiHiddenSetupLink") Then AvaliableCount += 1
+                If Not Settings.Get(Of Boolean)("UiHiddenSetupLink") Then AvaliableCount += 1
                 If Not Settings.Get(Of Boolean)("UiHiddenSetupSystem") Then AvaliableCount += 1
                 FrmSetupLeft.PanItem.Visibility = If(AvaliableCount < 2 AndAlso Not HiddenForceShow, Visibility.Collapsed, Visibility.Visible)
             End If

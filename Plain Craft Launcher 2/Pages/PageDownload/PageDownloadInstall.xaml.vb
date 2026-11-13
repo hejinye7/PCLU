@@ -541,6 +541,7 @@ Public Class PageDownloadInstall
             Logger.Error(ex, "可视化安装版本列表出错")
         End Try
     End Sub
+
     Private Sub TrySelectWaitingVersion()
         If VersionWaitingSelect Is Nothing Then Return
         For Each Version As JObject In MinecraftVersions

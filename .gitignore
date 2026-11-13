@@ -342,3 +342,5 @@ ASALocalRun/
 healthchecksdb
 
 MaskFiles/
+.build/
+.tmp-net48/

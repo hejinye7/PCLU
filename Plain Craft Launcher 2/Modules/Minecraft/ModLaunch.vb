@@ -1,5 +1,10 @@
 Public Module ModLaunch
 
+    ''' <summary>
+    ''' 便携启动器携带的离线玩家名。仅由 --portable-legacy 设置，不写入本机账户配置。
+    ''' </summary>
+    Public PortableLegacyName As String = ""
+
 #Region "开始"
 
     Public CurrentLaunchOptions As McLaunchOptions = Nothing
@@ -476,6 +481,7 @@ NextInner:
         {.ReloadTimeout = 1, .ProgressWeight = 15, .Block = False}
     Public Function McLoginInput() As McLoginData
         Dim LoginData As McLoginData = Nothing
+        If PortableLegacyName <> "" Then Return PageLoginLegacy.GetLoginData()
         Dim LoginType = Settings.Get(Of McLoginType)("LoginType")
         Try
             Select Case LoginType
@@ -916,7 +922,7 @@ Retry:
 
         Dim Result As String
         Try
-            Result = NetRequestByClientMultiple("https://login.live.com/oauth20_token.srf", HttpMethod.Post,
+            Result = NetRequestByClientMultiple("https://login.microsoftonline.com/consumers/oauth2/v2.0/token", HttpMethod.Post,
                 Content:=$"client_id={OAuthClientId}&refresh_token={StringUtils.FormUrlEscape(Code)}&grant_type=refresh_token&scope=XboxLive.signin%20offline_access",
                 ContentType:="application/x-www-form-urlencoded",
                 Headers:={{"Accept-Language", "en-US,en;q=0.5"}, {"X-Requested-With", "XMLHttpRequest"}},
@@ -1566,7 +1572,8 @@ NextInstance:
         '支持库
         Dim Cps As New List(Of String)
         Dim OptiFineCp As String = Nothing
-        For Each Library As McLibEntry In McLibListGet(McInstanceSelected, True)
+        'Lunar 的安装清单已经把主 Jar 放进专用 classpath，普通实例则使用自身主 Jar。
+        For Each Library As McLibEntry In McLibListGet(McInstanceSelected, McInstanceSelected.JsonObject("lunar_data") Is Nothing)
             If Library.IsNatives Then Continue For
             If Library.Name IsNot Nothing AndAlso Library.Name = "optifine:OptiFine" Then
                 OptiFineCp = Library.LocalPath
@@ -2127,13 +2134,17 @@ IgnoreCustomSkin:
         '进程优先级处理
         Try
             GameProcess.PriorityBoostEnabled = True
-            Select Case Settings.Get(Of Integer)("LaunchArgumentPriority")
-                Case 0 '高
-                    GameProcess.PriorityClass = ProcessPriorityClass.AboveNormal
-                Case 2 '低
-                    GameProcess.PriorityClass = ProcessPriorityClass.BelowNormal
-                Case Else '中
-            End Select
+            If Settings.Get(Of Boolean)("LaunchAdvanceAiPerformance") Then
+                GameProcess.PriorityClass = ProcessPriorityClass.AboveNormal
+            Else
+                Select Case Settings.Get(Of Integer)("LaunchArgumentPriority")
+                    Case 0 '高
+                        GameProcess.PriorityClass = ProcessPriorityClass.AboveNormal
+                    Case 2 '低
+                        GameProcess.PriorityClass = ProcessPriorityClass.BelowNormal
+                    Case Else '中
+                End Select
+            End If
         Catch ex As Exception
             Logger.Error(ex, "设置进程优先级失败")
         End Try

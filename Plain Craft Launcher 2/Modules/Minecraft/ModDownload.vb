@@ -195,23 +195,11 @@ Public Module ModDownload
     ''' </summary>
     Public DlClientListLoader As New LoaderTask(Of String, DlClientListResult)("DlClientList Main", AddressOf DlClientListMain)
     Private Sub DlClientListMain(Loader As LoaderTask(Of String, DlClientListResult))
-        Select Case Settings.Get(Of Integer)("ToolDownloadVersion")
-            Case 0
-                DlSourceLoader(Loader, New List(Of KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)) From {
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListBmclapiLoader, 30),
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListMojangLoader, 30 + 60)
-                }, Loader.IsForceRestarting)
-            Case 1
-                DlSourceLoader(Loader, New List(Of KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)) From {
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListMojangLoader, 5),
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListBmclapiLoader, 5 + 30)
-                }, Loader.IsForceRestarting)
-            Case Else
-                DlSourceLoader(Loader, New List(Of KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)) From {
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListMojangLoader, 60),
-                    New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListBmclapiLoader, 60 + 60)
-                }, Loader.IsForceRestarting)
-        End Select
+        '国内镜像与 Mojang 同时请求，以最先成功且内容完整的结果为准。
+        DlSourceLoader(Loader, New List(Of KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)) From {
+            New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListBmclapiLoader, 0),
+            New KeyValuePair(Of LoaderTask(Of String, DlClientListResult), Integer)(DlClientListMojangLoader, 30)
+        }, Loader.IsForceRestarting)
         '提取所有 Drop 序数
         Dim Drops As New List(Of Integer)
         For Each Version As JObject In Loader.Output.Value("versions")
@@ -271,7 +259,9 @@ Public Module ModDownload
     ''' </summary>
     Public DlClientListBmclapiLoader As New LoaderTask(Of String, DlClientListResult)("DlClientList Bmclapi", AddressOf DlClientListBmclapiMain)
     Private Sub DlClientListBmclapiMain(Loader As LoaderTask(Of String, DlClientListResult))
-        Dim Json As JObject = NetRequestByClientRetry("https://bmclapi2.bangbang93.com/mc/game/version_manifest.json", RequireJson:=True).DeserializeJson()
+        Dim Json As JObject = NetRequestByLoader(
+            DlPcllMirrorUrls("https://launchermeta.mojang.com/mc/game/version_manifest.json", ""),
+            IsJson:=True).DeserializeJson()
         Try
             Dim Versions As JArray = Json("versions")
             If Versions.Count < 200 Then Throw New Exception("获取到的版本列表长度不足（" & Json.ToString & "）")
@@ -1177,21 +1167,12 @@ Public Module ModDownload
         Dim Urls As New List(Of (Url As String, Timeout As Integer))
         Dim McimUrl As String = DlSourceModGet(Url)
         If McimUrl <> Url Then
-            Select Case Settings.Get(Of Integer)("ToolDownloadMod")
-                Case 0
-                    Urls.Add((McimUrl, 10))
-                    Urls.Add((McimUrl, 10))
-                    Urls.Add((Url, 30))
-                Case 1
-                    Urls.Add((Url, If(Url.Contains("modrinth"), 20, 10))) '至少 20s，要不然 Modrinth 返回不过来
-                    Urls.Add((McimUrl, 10))
-                    Urls.Add((Url, 30))
-                    Urls.Add((McimUrl, 30))
-                Case Else
-                    Urls.Add((Url, If(Url.Contains("modrinth"), 20, 10)))
-                    Urls.Add((Url, 30))
-                    Urls.Add((McimUrl, 30))
-            End Select
+            '开源构建没有 CurseForge Key 时，官方接口必然返回 403，直接使用兼容镜像。
+            Dim OfficialAvailable As Boolean = Not Url.Contains("api.curseforge.com") OrElse Not String.IsNullOrWhiteSpace(CurseForgeAPIKey)
+            Urls.Add((McimUrl, 10))
+            If OfficialAvailable Then Urls.Add((Url, If(Url.Contains("modrinth"), 20, 10))) 'Modrinth 偶尔需要更长响应时间
+            Urls.Add((McimUrl, 30))
+            If OfficialAvailable Then Urls.Add((Url, 30))
         Else
             Urls.Add((Url, If(Url.Contains("modrinth"), 20, 10)))
             Urls.Add((Url, 30))
@@ -1211,13 +1192,86 @@ Public Module ModDownload
 
 #Region "DlSource | 镜像下载源"
 
+    '这些入口均由 BMCLAPI / OpenBMCLAPI 官方服务提供，并会继续分发到其社区节点。
+    Private ReadOnly PcllMirrorRoots As String() = {
+        "https://openbmclapi.bangbang93.com",
+        "https://bmclapi.bangbang93.com",
+        "https://bmclapi2.bangbang93.com"
+    }
+    Private ReadOnly PcllMinecraftSourceRoots As String() = {
+        "https://piston-data.mojang.com",
+        "https://piston-meta.mojang.com",
+        "https://resources.download.minecraft.net",
+        "https://libraries.minecraft.net",
+        "https://launcher.mojang.com",
+        "https://launchermeta.mojang.com"
+    }
+    Private ReadOnly PcllLoaderSourceRoots As String() = {
+        "https://maven.minecraftforge.net",
+        "https://files.minecraftforge.net/maven",
+        "https://maven.fabricmc.net",
+        "https://maven.neoforged.net/releases"
+    }
+    Private ReadOnly PcllMavenCentralSourceRoots As String() = {
+        "https://repo1.maven.org/maven2",
+        "https://repo.maven.apache.org/maven2",
+        "https://repo.maven.org/maven2"
+    }
+    Private ReadOnly PcllChinaMavenRoots As String() = {
+        "https://mirrors.cloud.tencent.com/nexus/repository/maven-public",
+        "https://maven.aliyun.com/repository/public",
+        "https://repo.huaweicloud.com/repository/maven"
+    }
+
+    Private Function DlPcllMirrorUrls(Original As String, MirrorPath As String) As IEnumerable(Of String)
+        For Each SourceRoot As String In PcllMinecraftSourceRoots
+            If Original.StartsWith(SourceRoot, StringComparison.OrdinalIgnoreCase) Then
+                Dim Result(PcllMirrorRoots.Length - 1) As String
+                Dim RelativePath As String = Original.Substring(SourceRoot.Length)
+                For i = 0 To PcllMirrorRoots.Length - 1
+                    Result(i) = PcllMirrorRoots(i) & MirrorPath & RelativePath
+                Next
+                Return Result
+            End If
+        Next
+        Return Enumerable.Empty(Of String)()
+    End Function
+
+    Private Function DlPcllLoaderMirrorUrls(Original As String) As IEnumerable(Of String)
+        For Each SourceRoot As String In PcllLoaderSourceRoots
+            If Original.StartsWith(SourceRoot, StringComparison.OrdinalIgnoreCase) Then
+                Dim Result(PcllMirrorRoots.Length - 1) As String
+                Dim RelativePath As String = Original.Substring(SourceRoot.Length)
+                For i = 0 To PcllMirrorRoots.Length - 1
+                    Result(i) = PcllMirrorRoots(i) & "/maven" & RelativePath
+                Next
+                Return Result
+            End If
+        Next
+        Return Enumerable.Empty(Of String)()
+    End Function
+
+    Private Function DlChinaMavenMirrorUrls(Original As String) As IEnumerable(Of String)
+        For Each SourceRoot As String In PcllMavenCentralSourceRoots
+            If Original.StartsWith(SourceRoot, StringComparison.OrdinalIgnoreCase) Then
+                Dim Result(PcllChinaMavenRoots.Length - 1) As String
+                Dim RelativePath As String = Original.Substring(SourceRoot.Length)
+                For i = 0 To PcllChinaMavenRoots.Length - 1
+                    Result(i) = PcllChinaMavenRoots(i) & RelativePath
+                Next
+                Return Result
+            End If
+        Next
+        Return Enumerable.Empty(Of String)()
+    End Function
+
     Private DlPreferMojang As Boolean = False
     ''' <summary>
     ''' 下载文件（而非获取版本列表）的时候，是否优先使用官方源。
     ''' </summary>
     Public ReadOnly Property DlSourcePreferMojang As Boolean
         Get
-            Return Settings.Get(Of Integer)("ToolDownloadSource") = 2 OrElse (Settings.Get(Of Integer)("ToolDownloadSource") = 1 AndAlso DlPreferMojang)
+            Return DlPreferMojang
         End Get
     End Property
     ''' <summary>
@@ -1231,7 +1285,7 @@ Public Module ModDownload
     ''' </summary>
     Public ReadOnly Property DlVersionListPreferMojang As Boolean
         Get
-            Return Settings.Get(Of Integer)("ToolDownloadVersion") = 2 OrElse (Settings.Get(Of Integer)("ToolDownloadVersion") = 1 AndAlso DlPreferMojang)
+            Return DlPreferMojang
         End Get
     End Property
     ''' <summary>
@@ -1247,42 +1301,23 @@ Public Module ModDownload
     ''' </summary>
     Public Function DlSourceAssetsGet(Original As String) As IEnumerable(Of String)
         Original = Original.Replace("http://resources.download.minecraft.net", "https://resources.download.minecraft.net")
-        Return DlSourceOrder(
-            {Original},
-            {Original.
-                Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/assets").
-                Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/assets").
-                Replace("https://resources.download.minecraft.net", "https://bmclapi2.bangbang93.com/assets")
-            })
+        Return DlSourceOrder({Original}, DlPcllMirrorUrls(Original, "/assets"))
     End Function
     ''' <summary>
     ''' 下载 Libraries 文件。
     ''' </summary>
     Public Function DlSourceLibraryGet(Original As String) As IEnumerable(Of String)
-        If {"minecraftforge", "fabricmc", "neoforged"}.Any(Function(k) Original.Contains(k)) Then '不添加原版源
-            Return {
-                Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/maven"),
-                Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/libraries")
-            }
-        Else
-            Return DlSourceOrder(
-                {Original},
-                {Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/maven").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/maven"),
-                 Original.
-                    Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com/libraries").
-                    Replace("https://libraries.minecraft.net", "https://bmclapi2.bangbang93.com/libraries")
-                })
-        End If
+        Original = Original.
+            Replace("http://libraries.minecraft.net", "https://libraries.minecraft.net").
+            Replace("http://maven.minecraftforge.net", "https://maven.minecraftforge.net").
+            Replace("http://files.minecraftforge.net/maven", "https://files.minecraftforge.net/maven").
+            Replace("http://maven.fabricmc.net", "https://maven.fabricmc.net").
+            Replace("http://maven.neoforged.net/releases", "https://maven.neoforged.net/releases")
+        Dim MirrorUrls = DlPcllMirrorUrls(Original, "/maven").
+            Union(DlPcllMirrorUrls(Original, "/libraries")).
+            Union(DlPcllLoaderMirrorUrls(Original)).
+            Union(DlChinaMavenMirrorUrls(Original)).Distinct()
+        Return DlSourceOrder({Original}, MirrorUrls)
     End Function
     ''' <summary>
     ''' 下载 Launcher 或 Meta 文件。
@@ -1290,14 +1325,7 @@ Public Module ModDownload
     ''' </summary>
     Public Function DlSourceLauncherOrMetaGet(Original As String) As IEnumerable(Of String)
         If Original Is Nothing Then Throw New Exception("无对应的 json 下载地址")
-        Return DlSourceOrder(
-            {Original},
-            {Original.
-                Replace("https://piston-data.mojang.com", "https://bmclapi2.bangbang93.com").
-                Replace("https://piston-meta.mojang.com", "https://bmclapi2.bangbang93.com").
-                Replace("https://launcher.mojang.com", "https://bmclapi2.bangbang93.com").
-                Replace("https://launchermeta.mojang.com", "https://bmclapi2.bangbang93.com")
-            })
+        Return DlSourceOrder({Original}, DlPcllMirrorUrls(Original, ""))
     End Function
 
     'Mod 下载源

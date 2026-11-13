@@ -1,0 +1,15 @@
+{
+  "name": "Plain Craft Launcher Ultra",
+  "shortName": "PCLU",
+  "displayName": "PCLU · PCL 旗舰版",
+  "version": "1.0.1",
+  "versionCode": 417,
+  "releaseNotes": "品牌升级为 Plain Craft Launcher Ultra，加入负责人署名与多线路更新清单。",
+  "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
+  "downloadUrls": [
+    "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
+    "https://gh-proxy.com/https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
+    "https://cdn.jsdelivr.net/gh/hejinye7/PCLlife@main/Release/PCLU.exe"
+  ],
+  "releasePage": "https://github.com/hejinye7/PCLlife/releases/latest"
+}

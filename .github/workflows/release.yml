@@ -1,0 +1,39 @@
+name: PCLU Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore packages
+        shell: pwsh
+        run: dotnet restore "PCLCS\PCLCS.csproj"
+
+      - name: Build PCLU
+        shell: pwsh
+        run: |
+          msbuild "Plain Craft Launcher 2\Plain Craft Launcher 2.vbproj" /p:Configuration=Release /m /nologo
+          Copy-Item "Plain Craft Launcher 2\obj\Release\Plain Craft Launcher 2.exe" "PCLU.exe" -Force
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            PCLU.exe
+            update.json

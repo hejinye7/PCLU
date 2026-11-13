@@ -35,7 +35,7 @@ Public Class Settings
         New Setting("SystemDebugDelay", False, Source:=Sources.Registry),
         New Setting("SystemDebugSkipCopy", False, Source:=Sources.Registry),
         New Setting("SystemSystemCache", "", Source:=Sources.Registry),
-        New Setting("SystemSystemUpdate", 0),
+        New Setting("SystemSystemUpdate", 3),
         New Setting("SystemSystemActivity", 0),
         New Setting("SystemSystemTelemetry", True, Source:=Sources.Registry),
         New Setting("CacheDrops", "", Source:=Sources.Registry),
@@ -72,6 +72,9 @@ Public Class Settings
         New Setting("CacheAuthServerName", "", Source:=Sources.Registry, Encrypted:=True),
         New Setting("CacheAuthServerRegister", "", Source:=Sources.Registry, Encrypted:=True),
         New Setting("CacheDownloadFolder", "", Source:=Sources.Registry),
+        New Setting("CacheNetSourceQuality", "", Source:=Sources.Registry),
+        New Setting("CacheStartupOriginalMs", 716, Source:=Sources.Registry),
+        New Setting("CacheStartupPcllMs", 0, Source:=Sources.Registry),
         New Setting("CacheJavaListVersion", 0, Source:=Sources.Registry),
         New Setting("LoginRemember", True, Source:=Sources.Registry, Encrypted:=True),
         New Setting("LoginLegacyName", "", Source:=Sources.Registry, Encrypted:=True),
@@ -106,6 +109,7 @@ Public Class Settings
         New Setting("LaunchAdvanceDisableJLW", False),
         New Setting("LaunchAdvanceDisableLUA", False),
         New Setting("LaunchAdvanceGraphicCard", True, Source:=Sources.Registry),
+        New Setting("LaunchAdvanceAiPerformance", True, Source:=Sources.Registry),
         New Setting("LaunchAdvanceGC", 4),
         New Setting("LaunchRamType", 0, OnChanged:=AddressOf PageSetupLaunch.UpdateRamType),
         New Setting("LaunchRamCustom", 15),
@@ -116,7 +120,7 @@ Public Class Settings
         New Setting("ToolHelpChinese", True, Source:=Sources.Registry),
         New Setting("ToolDownloadThread", 63, Source:=Sources.Registry),
         New Setting("ToolDownloadSpeed", 42, Source:=Sources.Registry, OnChanged:=AddressOf ModNet.UpdateNetTaskSpeedLimitHigh),
-        New Setting("ToolDownloadSource", 1, Source:=Sources.Registry),
+        New Setting("ToolDownloadSource", 0, Source:=Sources.Registry),
         New Setting("ToolDownloadVersion", 1, Source:=Sources.Registry),
         New Setting("ToolDownloadTranslate", 0, Source:=Sources.Registry),
         New Setting("ToolDownloadTranslateV2", 1, Source:=Sources.Registry),
@@ -144,8 +148,8 @@ Public Class Settings
         New Setting("UiCustomType", 0, OnChanged:=AddressOf PageSetupUI.OnMainPageTypeChanged),
         New Setting("UiCustomPreset", 0),
         New Setting("UiCustomNet", ""),
-        New Setting("UiLogoType", 1, OnChanged:=AddressOf FormMain.UpdateBackgroundAndTitleBar),
-        New Setting("UiLogoText", "", OnChanged:=AddressOf FormMain.UpdateBackgroundAndTitleBar),
+        New Setting("UiLogoType", 2, OnChanged:=AddressOf FormMain.UpdateBackgroundAndTitleBar),
+        New Setting("UiLogoText", "PCLU · PCL 旗舰版", OnChanged:=AddressOf FormMain.UpdateBackgroundAndTitleBar),
         New Setting("UiLogoLeft", False, OnChanged:=AddressOf FormMain.UpdateBackgroundAndTitleBar),
         New Setting("UiMusicVolume", 500),
         New Setting("UiMusicStop", False),
@@ -313,16 +317,6 @@ Public Class Settings
         If Not Entries.TryGetValue(Key, Entry) Then Throw New KeyNotFoundException("未找到设置项：" & Key)
         Dim Value = Entry.GetCache(Instance)
         If Value IsNot Nothing Then Return Value
-        '对部分设置强制赋值
-        Static ForcedSettings As New Dictionary(Of String, Object) From {
-            {"UiHiddenPageLink", True},
-            {"UiHiddenSetupLink", True}
-        }
-        Dim ForcedSetting As Object = Nothing
-        If ForcedSettings.TryGetValue(Key, ForcedSetting) Then
-            Entry.Set(ForcedSetting, Instance)
-            Return ForcedSetting
-        End If
         '正常读取
         Try
             Dim GotValue As String = Nothing '先用 String 储存，避免类型转换

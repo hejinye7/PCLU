@@ -54,6 +54,8 @@
                     </x:Array>
                 </local:MyListItem.Buttons>
             </local:MyListItem>
+            <local:MyListItem x:Name="ItemCommunityClient" Type="RadioBox" IsScaleAnimationEnabled="False" Tag="7" MinPaddingRight="35" Height="36" VerticalAlignment="Top" Title="LabyMod"
+                          LogoScale="0.9" Logo="M256 128h512v128H256zM128 384h768v128H128zM256 640h512v128H256z" />
         </StackPanel>
     </local:MyScrollViewer>
 </local:MyPageLeft>

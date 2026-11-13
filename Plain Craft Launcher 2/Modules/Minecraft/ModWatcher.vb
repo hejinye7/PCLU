@@ -87,6 +87,7 @@ Public Module ModWatcher
             GameProcess.BeginErrorReadLine()
             AddHandler GameProcess.OutputDataReceived, AddressOf LogReceived
             AddHandler GameProcess.ErrorDataReceived, AddressOf LogReceived
+            StartAiPerformanceScheduler()
 
             '初始化时钟
             RunInNewThread(
@@ -113,6 +114,61 @@ Public Module ModWatcher
                     State = MinecraftState.Ended
                 End Try
             End Sub, "Minecraft Watcher PID " & PID)
+        End Sub
+
+        Private Sub StartAiPerformanceScheduler()
+            If Not Settings.Get(Of Boolean)("LaunchAdvanceAiPerformance") Then Return
+            RunInNewThread(
+            Sub()
+                Try
+                    GameProcess.PriorityBoostEnabled = True
+                    Dim LastCpuTime As TimeSpan = GameProcess.TotalProcessorTime
+                    Dim LastSampleTime As DateTime = DateTime.UtcNow
+                    Dim LastPriority As ProcessPriorityClass? = Nothing
+                    Dim IdleSamples As Integer = 0
+                    Dim ConsecutiveFailures As Integer = 0
+                    WatcherLog("PCLU AI 性能调度已接管游戏进程")
+                    Do
+                        Thread.Sleep(2000)
+                        If GameProcess.HasExited OrElse State = MinecraftState.Ended OrElse State = MinecraftState.Canceled Then Exit Do
+                        Try
+                            GameProcess.Refresh()
+                            Dim SampleTime As DateTime = DateTime.UtcNow
+                            Dim CpuTime As TimeSpan = GameProcess.TotalProcessorTime
+                            Dim ElapsedMilliseconds As Double = Math.Max((SampleTime - LastSampleTime).TotalMilliseconds, 1)
+                            Dim CpuLoad As Double = Math.Max(0, (CpuTime - LastCpuTime).TotalMilliseconds / ElapsedMilliseconds / Math.Max(Environment.ProcessorCount, 1))
+                            LastCpuTime = CpuTime
+                            LastSampleTime = SampleTime
+
+                            Dim IsForeground As Boolean = WindowHandle <> IntPtr.Zero AndAlso GetForegroundWindow() = WindowHandle
+                            Dim IsBusy As Boolean = CpuLoad >= 0.12
+                            Dim MemoryPressure As Double = 1 - My.Computer.Info.AvailablePhysicalMemory / Math.Max(CDbl(My.Computer.Info.TotalPhysicalMemory), 1)
+                            If State = MinecraftState.Loading OrElse IsForeground OrElse IsBusy OrElse MemoryPressure >= 0.9 Then
+                                IdleSamples = 0
+                            Else
+                                IdleSamples += 1
+                            End If
+
+                            Dim TargetPriority As ProcessPriorityClass =
+                                If(State = MinecraftState.Loading OrElse IsForeground OrElse IdleSamples < 5,
+                                   ProcessPriorityClass.AboveNormal,
+                                   ProcessPriorityClass.Normal)
+                            If LastPriority Is Nothing OrElse LastPriority.Value <> TargetPriority Then
+                                GameProcess.PriorityClass = TargetPriority
+                                LastPriority = TargetPriority
+                                WatcherLog($"PCLU AI 性能调度：{If(TargetPriority = ProcessPriorityClass.AboveNormal, "游戏优先", "后台平衡")}（CPU {Math.Round(CpuLoad * 100)}%，内存压力 {Math.Round(MemoryPressure * 100)}%）")
+                            End If
+                            ConsecutiveFailures = 0
+                        Catch ex As Exception
+                            ConsecutiveFailures += 1
+                            If ConsecutiveFailures = 1 OrElse ConsecutiveFailures Mod 10 = 0 Then Logger.Warn(ex, "PCLU AI 性能调度暂时无法访问游戏进程")
+                        End Try
+                    Loop
+                    WatcherLog("PCLU AI 性能调度已结束")
+                Catch ex As Exception
+                    If Not GameProcess.HasExited Then Logger.Warn(ex, "PCLU AI 性能调度异常")
+                End Try
+            End Sub, "PCLU AI Performance PID " & PID, ThreadPriority.BelowNormal)
         End Sub
 
         '状态
@@ -350,6 +406,7 @@ Public Module ModWatcher
         Private Declare Function SetWindowText Lib "user32" Alias "SetWindowTextA" (hWnd As Integer, str As String) As Boolean
         Private Declare Function ShowWindow Lib "user32" (hWnd As IntPtr, cmdWindow As UInteger) As Boolean
         Private Declare Function IsWindowVisible Lib "user32" (hWnd As IntPtr) As Boolean
+        Private Declare Function GetForegroundWindow Lib "user32" () As IntPtr
         Private Declare Function GetWindowThreadProcessId Lib "user32" (hWnd As IntPtr, ByRef lpdwProcessId As Integer) As Integer
 
         '崩溃处理

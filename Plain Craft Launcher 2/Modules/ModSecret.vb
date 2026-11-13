@@ -3,11 +3,25 @@
 Friend Module ModSecret
 
     '标注 PCL 的不同分支，仅用于替换标记
-    Public Const VersionBranchMain As String = "OpenSource"
+    Public Const VersionBranchMain As String = "PCLU"
     '在开源版的注册表与常规版的注册表隔离，以防数据冲突
-    Public Const RegFolder As String = "PCLDebug"
-    '用于微软登录的 ClientId
-    Public OAuthClientId As String = If(Environment.GetEnvironmentVariable("PCL_MS_CLIENT_ID"), "")
+    Public Const RegFolder As String = "PCLU"
+    '用于微软登录的 ClientId。环境变量优先，其次读取 PCL\clientId.txt，最后使用公开兼容值。
+    Public ReadOnly Property OAuthClientId As String
+        Get
+            Dim ClientId As String = Environment.GetEnvironmentVariable("PCL_MS_CLIENT_ID")
+            If String.IsNullOrWhiteSpace(ClientId) Then
+                Dim ClientIdFile As String = Paths.Base & "PCL\clientId.txt"
+                If File.Exists(ClientIdFile) Then ClientId = File.ReadAllText(ClientIdFile).Trim()
+            End If
+            If String.IsNullOrWhiteSpace(ClientId) Then ClientId = "c36a9fb6-4f2a-41ff-90bd-ae7cc92031eb"
+            Dim ParsedClientId As Guid
+            If Not Guid.TryParse(ClientId, ParsedClientId) Then
+                Throw New InvalidOperationException("微软登录 Client ID 格式不正确，请检查 PCL\clientId.txt 或 PCL_MS_CLIENT_ID 环境变量。")
+            End If
+            Return ClientId
+        End Get
+    End Property
     'CurseForge API Key
     Public CurseForgeAPIKey As String = If(Environment.GetEnvironmentVariable("PCL_CURSEFORGE_API_KEY"), "")
     '用于匿名数据收集的腾讯云日志服务上报 URL，形如 https://{region}.cls.tencentcs.com/track?topic_id={topic_id}
@@ -15,7 +29,7 @@ Friend Module ModSecret
 
 #Region "网络鉴权"
 
-    Public Const RestrictMcDownload As Boolean = True
+    Public Const RestrictMcDownload As Boolean = False
     Friend Function SecretCdnSign(UrlWithMark As String) As String
         If Not UrlWithMark.EndsWithF("{CDN}") Then Return UrlWithMark
         Return UrlWithMark.Replace("{CDN}", "").Replace(" ", "%20")
@@ -145,8 +159,53 @@ Friend Module ModSecret
 
 #Region "更新"
 
+    'PCLU 使用自己的更新清单，避免被官方版本覆盖。
+    '顺序按国际站、国内常用 CDN、代理回退排列；清单很小，失败时自动尝试下一条。
+    Public Const LauncherUpdateUrl As String = "https://raw.githubusercontent.com/hejinye7/PCLlife/main/update.json"
+    Public ReadOnly LauncherUpdateUrls As String() = {
+        LauncherUpdateUrl,
+        "https://cdn.jsdelivr.net/gh/hejinye7/PCLlife@main/update.json",
+        "https://gh-proxy.com/https://raw.githubusercontent.com/hejinye7/PCLlife/main/update.json"
+    }
+
+    Friend Function GetLauncherUpdateManifest() As JObject
+        Dim LastException As Exception = Nothing
+        For Each Url In LauncherUpdateUrls
+            Try
+                Return NetRequestByClientRetry(Url, RequireJson:=True).DeserializeJson(Of JObject)()
+            Catch ex As Exception
+                LastException = ex
+                Logger.Warn(ex, "获取 PCLU 更新清单失败：" & Url)
+            End Try
+        Next
+        If LastException IsNot Nothing Then Throw LastException
+        Return Nothing
+    End Function
+
     Friend Sub UpdateCheckByButton()
-        Hint("该版本中不包含更新功能……")
+        RunInNewThread(
+            Sub()
+                Try
+                    Dim Manifest = GetLauncherUpdateManifest()
+                    Dim LatestCode = Manifest("versionCode").Value(Of Integer)()
+                    Dim LatestVersion = Manifest("version")?.ToString()
+                    Dim DownloadUrl = Manifest("downloadUrl")?.ToString()
+                    If String.IsNullOrWhiteSpace(DownloadUrl) Then DownloadUrl = Manifest("releasePage")?.ToString()
+                    RunInUi(
+                        Sub()
+                            If LatestCode > VersionCode Then
+                                If MyMsgBox($"发现 PCLU 新版本 {LatestVersion}。{vbCrLf}当前版本：{VersionBaseName}", "PCLU 更新", "打开下载", "取消") = 1 AndAlso Not String.IsNullOrWhiteSpace(DownloadUrl) Then
+                                    OpenWebsite(DownloadUrl)
+                                End If
+                            Else
+                                MyMsgBox($"当前已是最新版本（{VersionBaseName}）。", "PCLU 更新", "确定")
+                            End If
+                        End Sub)
+                Catch ex As Exception
+                    Logger.Error(ex, "检查 PCLU 更新失败")
+                    RunInUi(Sub() MyMsgBox("暂时无法获取更新信息，请稍后重试。", "PCLU 更新", "确定"))
+                End Try
+            End Sub, "PCLU Update Check", ThreadPriority.BelowNormal)
     End Sub
 
     Friend IsUpdateWaitingRestart As Boolean = False

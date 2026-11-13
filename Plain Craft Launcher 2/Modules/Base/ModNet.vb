@@ -350,6 +350,180 @@ Retry:
     ''' </summary>
     Public NetTaskThreadCount As Integer = 0
 
+    Private ReadOnly NetSourceCooldowns As New ConcurrentDictionary(Of String, Long)(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly NetSourceQualities As New ConcurrentDictionary(Of String, NetSourceQuality)(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly NetSourceQualityLoadLock As New Object
+    Private NetSourceQualityLoaded As Boolean = False
+    Private NetSourceLastSave As Long = -60000
+    Private NetSourceTotalAttempts As Long = 0
+
+    Private Class NetSourceQuality
+        Public Attempts As Long
+        Public Successes As Long
+        Public Failures As Long
+        Public DownloadBytes As Long
+        Public DownloadMilliseconds As Long
+        Public ConnectMilliseconds As Long
+        Public Active As Integer
+    End Class
+
+    Private Class NetSourceQualitySnapshot
+        Public Attempts As Long
+        Public Successes As Long
+        Public Failures As Long
+        Public DownloadBytes As Long
+        Public DownloadMilliseconds As Long
+        Public ConnectMilliseconds As Long
+    End Class
+
+    Private Function NetSourceAuthority(Url As String) As String
+        Dim SchemeEnd As Integer = Url.IndexOf("://", StringComparison.Ordinal)
+        If SchemeEnd < 0 Then Return Url
+        Dim PathStart As Integer = Url.IndexOf("/"c, SchemeEnd + 3)
+        Return If(PathStart < 0, Url, Url.Substring(0, PathStart))
+    End Function
+
+    Private Function NetSourceIsCoolingDown(Url As String) As Boolean
+        If NetSourceCooldowns.IsEmpty Then Return False
+        Dim CurrentTime As Long = GetTimeMs()
+        For Each Entry In NetSourceCooldowns
+            If Entry.Value <= CurrentTime Then
+                Dim RemovedValue As Long
+                NetSourceCooldowns.TryRemove(Entry.Key, RemovedValue)
+            ElseIf Url.Equals(Entry.Key, StringComparison.OrdinalIgnoreCase) OrElse
+                   Url.StartsWith(Entry.Key & "/", StringComparison.OrdinalIgnoreCase) Then
+                Return True
+            End If
+        Next
+        Return False
+    End Function
+
+    Private Sub NetSourceCooldown(Url As String, Duration As Integer)
+        Dim Authority As String = NetSourceAuthority(Url)
+        Dim CooldownUntil As Long = GetTimeMs() + Duration
+        NetSourceCooldowns.AddOrUpdate(Authority, CooldownUntil,
+            Function(Key, CurrentValue) Math.Max(CurrentValue, CooldownUntil))
+    End Sub
+
+    Private Sub NetSourceMarkHealthy(Url As String)
+        If NetSourceCooldowns.IsEmpty Then Return
+        Dim RemovedValue As Long
+        NetSourceCooldowns.TryRemove(NetSourceAuthority(Url), RemovedValue)
+    End Sub
+
+    Private Function NetSourceGetQuality(Url As String) As NetSourceQuality
+        NetSourceEnsureQualityLoaded()
+        Return NetSourceQualities.GetOrAdd(NetSourceAuthority(Url), Function(Key) New NetSourceQuality)
+    End Function
+
+    Private Sub NetSourceEnsureQualityLoaded()
+        If NetSourceQualityLoaded Then Return
+        SyncLock NetSourceQualityLoadLock
+            If NetSourceQualityLoaded Then Return
+            Try
+                Dim Raw As String = Settings.Get(Of String)("CacheNetSourceQuality")
+                If Not String.IsNullOrWhiteSpace(Raw) Then
+                    Dim Snapshots = Newtonsoft.Json.JsonConvert.DeserializeObject(Of Dictionary(Of String, NetSourceQualitySnapshot))(Raw)
+                    If Snapshots IsNot Nothing Then
+                        Dim TotalAttempts As Long = 0
+                        For Each Entry In Snapshots.Take(32)
+                            If String.IsNullOrWhiteSpace(Entry.Key) OrElse Entry.Value Is Nothing Then Continue For
+                            Dim Snapshot = Entry.Value
+                            Dim Quality As New NetSourceQuality With {
+                                .Attempts = Math.Max(Snapshot.Attempts, 0),
+                                .Successes = Math.Max(Snapshot.Successes, 0),
+                                .Failures = Math.Max(Snapshot.Failures, 0),
+                                .DownloadBytes = Math.Max(Snapshot.DownloadBytes, 0),
+                                .DownloadMilliseconds = Math.Max(Snapshot.DownloadMilliseconds, 0),
+                                .ConnectMilliseconds = Math.Max(Snapshot.ConnectMilliseconds, 0)
+                            }
+                            NetSourceQualities.TryAdd(Entry.Key, Quality)
+                            TotalAttempts += Quality.Attempts
+                        Next
+                        Interlocked.Exchange(NetSourceTotalAttempts, TotalAttempts)
+                    End If
+                End If
+            Catch ex As Exception
+                Logger.Warn(ex, "读取下载线路学习数据失败")
+            Finally
+                NetSourceQualityLoaded = True
+            End Try
+        End SyncLock
+    End Sub
+
+    Private Sub NetSourceScheduleQualitySave()
+        Dim CurrentTime As Long = GetTimeMs()
+        Dim LastSave As Long = Interlocked.Read(NetSourceLastSave)
+        If CurrentTime - LastSave < 15000 Then Return
+        If Interlocked.CompareExchange(NetSourceLastSave, CurrentTime, LastSave) <> LastSave Then Return
+        RunInNewThread(AddressOf NetSourceSaveQuality, "保存下载线路学习数据", ThreadPriority.BelowNormal)
+    End Sub
+
+    Private Sub NetSourceSaveQuality()
+        Try
+            Dim Snapshots As New Dictionary(Of String, NetSourceQualitySnapshot)(StringComparer.OrdinalIgnoreCase)
+            For Each Entry In NetSourceQualities.Take(32)
+                Dim Quality = Entry.Value
+                Dim Successes As Long = Interlocked.Read(Quality.Successes)
+                Dim Failures As Long = Interlocked.Read(Quality.Failures)
+                Dim Completed As Long = Successes + Failures
+                If Completed <= 0 Then Continue For
+                Dim Scale As Double = Math.Min(1, 120.0 / Completed)
+                Snapshots(Entry.Key) = New NetSourceQualitySnapshot With {
+                    .Attempts = Math.Max(1, CLng(Math.Round(Completed * Scale))),
+                    .Successes = CLng(Math.Round(Successes * Scale)),
+                    .Failures = CLng(Math.Round(Failures * Scale)),
+                    .DownloadBytes = CLng(Interlocked.Read(Quality.DownloadBytes) * Scale),
+                    .DownloadMilliseconds = CLng(Interlocked.Read(Quality.DownloadMilliseconds) * Scale),
+                    .ConnectMilliseconds = CLng(Interlocked.Read(Quality.ConnectMilliseconds) * Scale)
+                }
+            Next
+            Settings.Set("CacheNetSourceQuality", Newtonsoft.Json.JsonConvert.SerializeObject(Snapshots, Newtonsoft.Json.Formatting.None))
+        Catch ex As Exception
+            Logger.Warn(ex, "保存下载线路学习数据失败")
+        End Try
+    End Sub
+
+    Private Sub NetSourceBegin(Url As String)
+        Dim Quality = NetSourceGetQuality(Url)
+        Interlocked.Increment(Quality.Active)
+    End Sub
+
+    Private Sub NetSourceEnd(Url As String, Failed As Boolean, Bytes As Long, Elapsed As Long, ConnectElapsed As Long)
+        Dim Quality = NetSourceGetQuality(Url)
+        Interlocked.Decrement(Quality.Active)
+        If Not Failed AndAlso Bytes <= 0 Then Return '外部取消或切换线路，不应污染线路学习结果
+        Interlocked.Increment(Quality.Attempts)
+        Interlocked.Increment(NetSourceTotalAttempts)
+        If Failed Then
+            Interlocked.Increment(Quality.Failures)
+        ElseIf Bytes > 0 Then
+            Interlocked.Increment(Quality.Successes)
+            Interlocked.Add(Quality.DownloadBytes, Bytes)
+            Interlocked.Add(Quality.DownloadMilliseconds, Math.Max(Elapsed, 1))
+            If ConnectElapsed > 0 Then Interlocked.Add(Quality.ConnectMilliseconds, ConnectElapsed)
+        End If
+        NetSourceScheduleQualitySave()
+    End Sub
+
+    Private Function NetSourceGetScore(Url As String) As Double
+        Dim Quality = NetSourceGetQuality(Url)
+        Dim Attempts As Long = Interlocked.Read(Quality.Attempts)
+        Dim Active As Integer = Quality.Active
+        '未学习线路应优先试用，但必须使用有限分数，否则浮点精度会让并发惩罚失效，所有线程都挤到同一线路。
+        If Attempts = 0 Then Return 256.0 * 1024 * 1024 / (1 + Active * 2)
+        Dim Successes As Long = Interlocked.Read(Quality.Successes)
+        Dim Failures As Long = Interlocked.Read(Quality.Failures)
+        Dim Milliseconds As Long = Interlocked.Read(Quality.DownloadMilliseconds)
+        Dim Bytes As Long = Interlocked.Read(Quality.DownloadBytes)
+        Dim Throughput As Double = If(Milliseconds > 0, Bytes * 1000.0 / Milliseconds, 2 * 1024 * 1024)
+        Throughput = Math.Min(Throughput, 128 * 1024 * 1024)
+        Dim SuccessRate As Double = (Successes + 1.0) / (Successes + Failures + 2.0)
+        Dim ConnectAverage As Double = If(Successes > 0, Interlocked.Read(Quality.ConnectMilliseconds) / Successes, 1000)
+        Dim Exploration As Double = Math.Sqrt(2 * Math.Log(Math.Max(Interlocked.Read(NetSourceTotalAttempts), 2)) / Attempts) * 4 * 1024 * 1024
+        Return (Throughput * 0.7 + SuccessRate * 8 * 1024 * 1024 + Exploration - ConnectAverage * 2048) / (1 + Active * 0.75)
+    End Function
+
     ''' <summary>
     ''' 下载源。
     ''' </summary>
@@ -608,12 +782,29 @@ Retry:
             If Id >= Sources.Count OrElse Id < 0 Then Id = 0
             SyncLock LockSource
                 If HasAvailableSource(False) Then
-                    '存在多线程可用源
-                    Dim CurrentSource As NetSource = Sources(Id)
-                    While CurrentSource.IsFailed
+                    '根据实时吞吐、成功率、连接耗时与当前负载自动选择线路
+                    Dim StartId As Integer = Id
+                    Dim BestSource As NetSource = Nothing
+                    Dim BestScore As Double = Double.MinValue
+                    Do
+                        Dim PreferredSource As NetSource = Sources(Id)
+                        If Not PreferredSource.IsFailed AndAlso Not NetSourceIsCoolingDown(PreferredSource.Url) Then
+                            Dim Score As Double = NetSourceGetScore(PreferredSource.Url)
+                            If Score > BestScore Then
+                                BestScore = Score
+                                BestSource = PreferredSource
+                            End If
+                        End If
                         Id += 1
                         If Id >= Sources.Count Then Id = 0
-                        CurrentSource = Sources(Id)
+                    Loop While Id <> StartId
+                    If BestSource IsNot Nothing Then Return BestSource
+                    '所有可用源都在冷却时仍继续尝试，避免无源可用
+                    Dim CurrentSource As NetSource = Sources(StartId)
+                    While CurrentSource.IsFailed
+                        StartId += 1
+                        If StartId >= Sources.Count Then StartId = 0
+                        CurrentSource = Sources(StartId)
                     End While
                     Return CurrentSource
                 ElseIf SourcesOnce.Any Then
@@ -904,9 +1095,12 @@ StartThread:
             Dim ResultStream As Stream = Nothing, HttpRequest As HttpRequestMessage = Nothing,
                 Response As HttpResponseMessage = Nothing, ResponseStream As Stream = Nothing,
                 CancelToken As CancellationTokenSource = Nothing
+            Dim SourceStartTime As Long = GetTimeMs(), SourceConnectTime As Long = 0
+            Dim SourceFailed As Boolean = False
+            NetSourceBegin(Th.Source.Url)
             '部分下载源真的特别慢，并且只需要一个请求，例如 Ping 为 20s，如果增长太慢，就会造成类似 2.5s 5s 7.5s 10s 12.5s... 的极大延迟
             '延迟过长会导致某些特别慢的链接迟迟不被掐死
-            Dim Timeout As Integer = Math.Min(Math.Max(ConnectAverage, 15000) * (1 + Th.Source.FailCount), 30000)
+            Dim Timeout As Integer = Math.Min(Math.Max(ConnectAverage, 8000) * (1 + Th.Source.FailCount), 24000)
             Th.State = NetState.Connecting
             Try
                 Dim HttpDataCount As Integer = 0
@@ -920,6 +1114,8 @@ StartThread:
                 If Not Response.IsSuccessStatusCode Then '状态码检查
                     Throw New HttpRequestCodeException($"错误码 {Response.StatusCode} ({CInt(Response.StatusCode)})，{Th.Source.Url}", Response.StatusCode, Nothing)
                 End If
+                SourceConnectTime = GetTimeMs() - SourceStartTime
+                NetSourceMarkHealthy(Th.Source.Url)
                 If State = NetState.Canceled Then GoTo SourceBreak '快速中断
                 If Response.RequestMessage.RequestUri.ToString <> Th.Source.Url Then Logger.Trace(Function() $"{LocalName}：重定向至 {Response.RequestMessage.RequestUri}")
                 '文件大小校验
@@ -988,8 +1184,8 @@ NotSupportRange:
                 CancelToken.Dispose() : CancelToken = New CancellationTokenSource() '重置超时，不再让 CancellationToken 在固定时间后触发（#8488）
                 ResponseStream = Response.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
                 If Settings.Get(Of Boolean)("SystemDebugDelay") Then Threading.Thread.Sleep(RandomInteger(50, 3000))
-                Dim ResponseBytes As Byte() = New Byte(16384) {}
-                HttpDataCount = ResponseStream.ReadAsync(ResponseBytes, 0, 16384, CancelToken.Token).GetResultWithTimeout(CancelToken, Timeout)
+                Dim ResponseBytes As Byte() = New Byte(65535) {}
+                HttpDataCount = ResponseStream.ReadAsync(ResponseBytes, 0, ResponseBytes.Length, CancelToken.Token).GetResultWithTimeout(CancelToken, Timeout)
                 While (IsUnknownSize OrElse Th.DownloadUndone > 0) AndAlso '判断是否下载完成
                             HttpDataCount > 0 AndAlso Not IsProgramEnding AndAlso State < NetState.Merging AndAlso (Not Th.Source.IsFailed OrElse Th.Source.SingleThread = Th)
                     '限速
@@ -1031,7 +1227,7 @@ NotSupportRange:
                         '无数据，且已超时
                         Throw New TimeoutException("操作超时，无数据。")
                     End If
-                    HttpDataCount = ResponseStream.ReadAsync(ResponseBytes, 0, 16384, CancelToken.Token).GetResultWithTimeout(CancelToken, Timeout)
+                    HttpDataCount = ResponseStream.ReadAsync(ResponseBytes, 0, ResponseBytes.Length, CancelToken.Token).GetResultWithTimeout(CancelToken, Timeout)
                 End While
 SourceBreak:
                 If State = NetState.Canceled OrElse (Th.Source.IsFailed AndAlso Th.Source.SingleThread <> Th) OrElse (Th.DownloadUndone > 0 AndAlso Not IsUnknownSize) Then
@@ -1047,10 +1243,14 @@ SourceBreak:
                     Logger.Trace(Function() $"{LocalName}：完成，已下载 {Th.DownloadDone}（{Th.DownloadStart}~{Th.DownloadEnd}）")
                 End If
             Catch ex As Exception
+                SourceFailed = True
                 If ex.IsBadNetwork OrElse TypeOf ex Is TaskCanceledException Then
                     Logger.Info(New TimeoutException($"{LocalName}：超时（{Timeout}ms），{ex.Message}"))
                 Else
                     Logger.Info(ex, $"{LocalName}：出错")
+                End If
+                If ex.IsBadNetwork OrElse TypeOf ex Is TaskCanceledException OrElse TypeOf ex Is TimeoutException Then
+                    NetSourceCooldown(Th.Source.Url, 30 * 1000)
                 End If
                 SourceFail(Th, ex, False)
             Finally
@@ -1060,6 +1260,7 @@ SourceBreak:
                 ResponseStream?.Dispose()
                 CancelToken?.Dispose()
                 If Not IsNoSplit Then ResultStream?.Dispose()
+                NetSourceEnd(Th.Source.Url, SourceFailed, Th.DownloadDone, GetTimeMs() - SourceStartTime, SourceConnectTime)
                 '改变计数
                 Interlocked.Decrement(NetTaskThreadCount)
                 '合并
@@ -1078,9 +1279,10 @@ SourceBreak:
             '根据情况判断，是否在多线程下禁用下载源（连续错误过多，或不支持断点续传）
             Dim IsRangeNotSupported As Boolean = TypeOf ex Is RangeNotSupportedException OrElse ex.Message.Contains("(416)")
             If IsMergeFailure OrElse IsRangeNotSupported OrElse
-               ex.Message.Contains("(502)") OrElse ex.Message.Contains("(404)") OrElse
+               ex.Message.Contains("(502)") OrElse ex.Message.Contains("(503)") OrElse ex.Message.Contains("(504)") OrElse ex.Message.Contains("(404)") OrElse
                ex.Message.Contains("未能解析") OrElse ex.Message.Contains("无返回数据") OrElse ex.Message.Contains("空间不足") OrElse
-               ((ex.Message.Contains("(403)") OrElse ex.Message.Contains("(429)")) AndAlso Not Th.Source.Url.Contains("bmclapi")) OrElse 'BMCLAPI 的部分源在高频率请求下会返回 403/429，所以不应因此禁用下载源
+               (ex.Message.Contains("(403)") AndAlso Not Th.Source.Url.Contains("bmclapi")) OrElse
+               (ex.Message.Contains("(429)") AndAlso (Not Th.Source.Url.Contains("bmclapi") OrElse Th.Source.FailCount >= 3)) OrElse 'BMCLAPI 连续限流时切换到下一线路
                (Th.Source.FailCount >= NetTaskThreadLimit.Clamp(5, 30) AndAlso DownloadDone < 1) OrElse Th.Source.FailCount > NetTaskThreadLimit + 2 Then
                 '当一个下载源有多个线程在下载时，只选择其中一个线程进行后续处理
                 Dim IsThisFail As Boolean = False
@@ -1092,6 +1294,13 @@ SourceBreak:
                 End SyncLock
                 '……后续处理
                 If IsThisFail Then
+                    If ex.Message.Contains("(429)") Then
+                        NetSourceCooldown(Th.Source.Url, 60 * 1000)
+                    ElseIf ex.IsBadNetwork OrElse TypeOf ex Is TaskCanceledException OrElse TypeOf ex Is TimeoutException OrElse
+                           ex.Message.Contains("(502)") OrElse ex.Message.Contains("(503)") OrElse ex.Message.Contains("(504)") OrElse
+                           ex.Message.Contains("未能解析") Then
+                        NetSourceCooldown(Th.Source.Url, 30 * 1000)
+                    End If
                     Logger.Info($"{LocalName}：下载源被禁用（{Th.Source.Id}，Range 问题：{IsRangeNotSupported}）：{Th.Source.Url}")
                     Logger.Warn(ex, $"{If(SourcesOnce.FirstOrDefault?.SingleThread Is Nothing, "", "单线程")}下载源 {Th.Source.Id} 已被禁用")
                     SyncLock LockSource

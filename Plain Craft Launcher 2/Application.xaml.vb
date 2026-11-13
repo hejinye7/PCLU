@@ -9,6 +9,25 @@ Public Class Application
             '核心初始化
             MeloongCore.Main.Init("PCL")
             MeloongCore.Wpf.Main.Init()
+            '便携启动器通过参数指定自身的 Minecraft 文件夹，不修改本机全局设置。
+            Dim PortableIndex As Integer = Array.IndexOf(e.Args, "--portable-minecraft")
+            If PortableIndex >= 0 AndAlso PortableIndex + 1 < e.Args.Length Then
+                Try
+                    PortableMinecraftOverride = Path.GetFullPath(e.Args(PortableIndex + 1).Trim(""""c))
+                    DirectoryUtils.Create(PortableMinecraftOverride)
+                Catch ex As Exception
+                    Logger.Warn(ex, "读取便携 Minecraft 文件夹失败")
+                    PortableMinecraftOverride = ""
+                End Try
+            End If
+            Dim LegacyIndex As Integer = Array.IndexOf(e.Args, "--portable-legacy")
+            If LegacyIndex >= 0 AndAlso LegacyIndex + 1 < e.Args.Length Then
+                PortableLegacyName = e.Args(LegacyIndex + 1).Trim(""""c)
+            End If
+            Dim JavaIndex As Integer = Array.IndexOf(e.Args, "--portable-java")
+            If JavaIndex >= 0 AndAlso JavaIndex + 1 < e.Args.Length Then
+                PortableJavaOverride = Path.GetFullPath(e.Args(JavaIndex + 1).Trim(""""c))
+            End If
             If Not (e.Args.Contains("--update") OrElse e.Args.Contains("--gpu") OrElse e.Args.Contains("--memory")) Then '若是通过命令行调用，则不检查单例、不轮换日志（#9137）
                 WaitingMutex(e)
                 Logger.Instance = New PclLogger With {.logFolder = Paths.BaseThenName, .MinLevel = If(ModeDebug, LogLevel.Trace, LogLevel.Info)}
@@ -131,7 +150,8 @@ RetryCacheCheck:
                 FormMain.EndProgramForce(ProcessReturnValues.Cancel)
             End If
             '计时
-            Logger.Info($"第一阶段加载用时：{GetTimeMs() - ApplicationStartTick} ms")
+            ApplicationStartPhase1 = GetTimeMs() - ApplicationStartTick
+            Logger.Info($"第一阶段加载用时：{ApplicationStartPhase1} ms")
             ApplicationStartTick = GetTimeMs()
             AniControlEnabled += 1
         Catch ex As Exception
@@ -164,7 +184,8 @@ RetryCacheCheck:
                 End Try
             End If
             '将已有的 PCL 窗口拖出来
-            Dim WindowHwnd As IntPtr = FindWindow(Nothing, "Plain Craft Launcher　")
+            Dim WindowHwnd As IntPtr = FindWindow(Nothing, "Plain Craft Launcher Ultra · PCL 旗舰版　")
+            If WindowHwnd = IntPtr.Zero Then WindowHwnd = FindWindow(Nothing, "Plain Craft Launcher　")
             If WindowHwnd = IntPtr.Zero Then WindowHwnd = FindWindow(Nothing, "Plain Craft Launcher 2　")
             If WindowHwnd <> IntPtr.Zero Then ShowWindowToTop(WindowHwnd)
             '播放提示音并退出

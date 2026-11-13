@@ -1721,6 +1721,11 @@ Retry:
         ''' 欲下载的 LiteLoader 详细信息。
         ''' </summary>
         Public LiteLoaderEntry As DlLiteLoaderListEntry = Nothing
+        Public LabyModChannel As String = Nothing
+        Public LabyModCommitReference As String = Nothing
+        Public LabyModProfile As JObject = Nothing
+        Public LabyModCore As JObject = Nothing
+        Public LabyModLibraries As JObject = Nothing
         ''' <summary>
         ''' 是否为中间产物。
         ''' </summary>
@@ -1798,6 +1803,21 @@ Retry:
             McDownloadClientLoader(Request.Components.MinecraftVersion, Request.MinecraftJson, VersionFolder)) With {
             .ProgressWeight = 39, .Show = False, .Block = Not Modable AndAlso OptiFineEntry Is Nothing}
         LoaderList.Add(ClientLoader)
+        If Request.LabyModChannel IsNot Nothing Then
+            LoaderList.Add(New LoaderTask(Of Integer, Integer)("获取 LabyMod 游戏组件清单",
+            Sub()
+                Dim Core = NetRequestByClientRetry(
+                    $"https://releases.r2.labymod.net/api/v1/manifest/{Request.LabyModChannel}/latest.json", RequireJson:=True).DeserializeJson(Of JObject)()
+                If Core("commitReference")?.ToString() <> Request.LabyModCommitReference Then
+                    Throw New Exception("LabyMod 版本清单已更新，请刷新社区客户端页面后重试。")
+                End If
+                Dim ProfileUrl = $"https://releases.r2.labymod.net/api/v1/download/manifest/labymod4/{Request.LabyModChannel}/{Request.Components.MinecraftVersion}/{Request.LabyModCommitReference}.json"
+                Request.LabyModProfile = NetRequestByClientRetry(ProfileUrl, RequireJson:=True).DeserializeJson(Of JObject)()
+                Request.LabyModCore = Core
+                Request.LabyModLibraries = NetRequestByClientRetry(
+                    $"https://releases.r2.labymod.net/api/v1/libraries/{Request.LabyModChannel}.json", RequireJson:=True).DeserializeJson(Of JObject)()
+            End Sub) With {.ProgressWeight = 2, .Show = False})
+        End If
         'OptiFine
         If OptiFineEntry IsNot Nothing Then
             If OptiFineAsMod Then ManagedFileSources.Add("OptiFine", OptiFineFolder & OptiFineEntry.FileName)
@@ -1837,7 +1857,7 @@ Retry:
         LoaderList.Add(New LoaderTask(Of String, String)("安装游戏",
         Sub(Task As LoaderTask(Of String, String))
             '合并 JSON：将多个版本 JSON 进行合并，如果已存在则直接覆盖
-            MergeJson(VersionFolder, OptiFineFolder, OptiFineAsMod, ForgeFolder, NeoForgeFolder, FabricFolder, LiteLoaderFolder)
+            MergeJson(VersionFolder, OptiFineFolder, OptiFineAsMod, ForgeFolder, NeoForgeFolder, FabricFolder, LiteLoaderFolder, Request)
             Task.Progress = 0.2
             '迁移文件
             DirectoryUtils.Copy(TempMcFolder & "libraries", MinecraftFolder & "libraries")
@@ -1855,6 +1875,25 @@ Retry:
             DirectoryUtils.Create(ResourcepacksFolder)
             Logger.Info($"自动创建资源包文件夹：{ResourcepacksFolder}")
         End Sub) With {.ProgressWeight = 2, .Block = True})
+        If Request.LabyModChannel IsNot Nothing Then
+            Dim LabyAssets As New List(Of LoaderBase)
+            LabyAssets.Add(New LoaderTask(Of String, List(Of NetFile))("分析 LabyMod 资源文件",
+            Sub(Task)
+                Dim AssetFiles As New List(Of NetFile)
+                Dim Assets = TryCast(Request.LabyModCore("assets"), JObject)
+                If Assets IsNot Nothing Then
+                    Dim AssetFolder = Path.Combine(New McInstance(VersionFolder).PathIndie, "labymod-neo", "assets")
+                    For Each Asset As JProperty In Assets.Properties()
+                        Dim Hash = Asset.Value.ToString()
+                        Dim Url = $"https://releases.r2.labymod.net/api/v1/download/assets/labymod4/{Request.LabyModChannel}/{Request.LabyModCommitReference}/{Asset.Name}/{Hash}.jar"
+                        AssetFiles.Add(New NetFile({Url}, Path.Combine(AssetFolder, Asset.Name & ".jar"), New FileChecker With {.Hash = Hash}))
+                    Next
+                End If
+                Task.Output = AssetFiles
+            End Sub) With {.ProgressWeight = 1, .Show = False})
+            LabyAssets.Add(New LoaderDownload("下载 LabyMod 资源文件", New List(Of NetFile)) With {.ProgressWeight = 4, .Show = False})
+            LoaderList.Add(New LoaderCombo(Of String)("下载 LabyMod 资源文件", LabyAssets) With {.ProgressWeight = 5, .Show = False})
+        End If
         '补全文件
         Dim LoadersLib As New List(Of LoaderBase)
         LoadersLib.Add(New LoaderTask(Of String, List(Of NetFile))("分析游戏支持库文件（副加载器）", Sub(Task) Task.Output = McLibNetFilesFromInstance(New McInstance(VersionFolder))) With {.ProgressWeight = 1, .Show = False})
@@ -1894,7 +1933,8 @@ Retry:
         Return LoaderList
     End Function
     Private Sub MergeJson(VersionFolder As String, OptiFineFolder As String, OptiFineAsMod As Boolean,
-                          ForgeFolder As String, NeoForgeFolder As String, FabricFolder As String, LiteLoaderFolder As String)
+                          ForgeFolder As String, NeoForgeFolder As String, FabricFolder As String, LiteLoaderFolder As String,
+                          Optional Request As McInstallRequest = Nothing)
         Dim ProfileSources As New List(Of (Name As String, Folder As String)) From {("Minecraft", VersionFolder)}
         If OptiFineFolder IsNot Nothing AndAlso Not OptiFineAsMod Then ProfileSources.Add(("OptiFine", OptiFineFolder))
         If ForgeFolder IsNot Nothing Then ProfileSources.Add(("Forge", ForgeFolder))
@@ -1938,9 +1978,73 @@ Retry:
         MergedJson.Remove("jar")
         Dim VersionName = PathUtils.GetLastPart(VersionFolder)
         MergedJson("id") = VersionName
+        If Request IsNot Nothing AndAlso Request.LabyModChannel IsNot Nothing Then ApplyLabyModJson(MergedJson, Request)
         '保存
         FileUtils.Write(Path.Combine(VersionFolder, VersionName & ".json"), MergedJson.ToString())
         Logger.Info($"版本合并 {VersionName} 完成")
+    End Sub
+
+    Private Sub ApplyLabyModJson(Target As JObject, Request As McInstallRequest)
+        If Request.LabyModProfile Is Nothing OrElse Request.LabyModCore Is Nothing OrElse Request.LabyModLibraries Is Nothing Then
+            Throw New Exception("LabyMod 安装清单尚未加载。")
+        End If
+        Dim Profile = Request.LabyModProfile
+        For Each Key In {"mainClass", "arguments", "minecraftArguments", "assetIndex", "assets", "javaVersion", "logging", "complianceLevel"}
+            If Profile(Key) IsNot Nothing Then Target(Key) = Profile(Key).DeepClone()
+        Next
+        Dim Libraries As New JArray
+        Dim IsolatedNames As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Dim Isolated = TryCast(Request.LabyModLibraries("isolated_libraries"), JArray)
+        If Isolated IsNot Nothing Then
+            For Each Library As JObject In Isolated.Children(Of JObject)()
+                If Library("name") IsNot Nothing Then IsolatedNames.Add(Library("name").ToString())
+            Next
+        End If
+        Dim ProfileLibraries = TryCast(Profile("libraries"), JArray)
+        If ProfileLibraries IsNot Nothing Then
+            For Each Library As JObject In ProfileLibraries.Children(Of JObject)()
+                Dim Parts = Library("name")?.ToString().Split(":"c)
+                If Parts IsNot Nothing AndAlso Parts.Length > 1 AndAlso Parts(1).StartsWith("lwjgl", StringComparison.OrdinalIgnoreCase) AndAlso IsolatedNames.Contains(Parts(1)) Then Continue For
+                Libraries.Add(Library.DeepClone())
+            Next
+        End If
+        Dim AllLibraries = TryCast(Request.LabyModLibraries("libraries"), JArray)
+        If AllLibraries IsNot Nothing Then
+            For Each Library As JObject In AllLibraries.Children(Of JObject)()
+                Dim Url = Library("url")?.ToString()
+                If String.IsNullOrWhiteSpace(Url) OrElse Url.Contains("natives-linux") OrElse Url.Contains("natives-macos") OrElse Url.Contains("natives-windows-arm") Then Continue For
+                Dim RelativePath = New Uri(Url).AbsolutePath.AfterLast("/libraries/")
+                If RelativePath = Url OrElse RelativePath.Contains("..") Then Throw New Exception("LabyMod 库清单包含无效路径。")
+                Libraries.Add(New JObject From {
+                    {"name", Library("name")?.DeepClone()},
+                    {"downloads", New JObject From {
+                        {"artifact", New JObject From {
+                            {"path", RelativePath}, {"sha1", Library("sha1")?.DeepClone()},
+                            {"size", Library("size")?.DeepClone()}, {"url", Url}
+                        }}
+                    }}
+                })
+            Next
+        End If
+        Dim Commit = Request.LabyModCore("commitReference").ToString()
+        Libraries.Add(New JObject From {
+            {"name", "net.labymod:LabyMod:4"},
+            {"downloads", New JObject From {
+                {"artifact", New JObject From {
+                    {"path", "net/labymod/LabyMod/4/LabyMod-4.jar"},
+                    {"sha1", Request.LabyModCore("sha1")?.DeepClone()},
+                    {"size", Request.LabyModCore("size")?.DeepClone()},
+                    {"url", $"https://releases.r2.labymod.net/api/v1/download/labymod4/{Request.LabyModChannel}/{Commit}.jar"}
+                }}
+            }}
+        })
+        Target("libraries") = Libraries
+        Target("labymod_data") = New JObject From {
+            {"channelType", Request.LabyModChannel},
+            {"commitReference", Commit},
+            {"version", Request.LabyModCore("labyModVersion")?.DeepClone()},
+            {"versionType", If(Request.LabyModChannel = "snapshot", "snapshot", "release")}
+        }
     End Sub
     ''' <summary>
     ''' 进行合并安装。返回是否已经开始安装。

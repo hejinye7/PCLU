@@ -35,7 +35,8 @@ Public Class PageLoginLegacy
     ''' 获取当前页面的登录信息。
     ''' </summary>
     Public Shared Function GetLoginData() As McLoginData
-        Dim UserName As String = If(FrmLoginLegacy Is Nothing, "", FrmLoginLegacy.ComboName.Text.Replace("¨", "").Trim)
+        Dim UserName As String = If(PortableLegacyName <> "", PortableLegacyName,
+                                    If(FrmLoginLegacy Is Nothing, "", FrmLoginLegacy.ComboName.Text.Replace("¨", "").Trim))
         Return New McLoginLegacy With {.UserName = UserName, .SkinType = Settings.Get(Of Integer)("LaunchSkinType"), .SkinName = Settings.Get(Of String)("LaunchSkinID")}
     End Function
     ''' <summary>

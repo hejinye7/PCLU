@@ -73,22 +73,22 @@ Public Class PageSpeedLeft
             Dim LoaderList As List(Of LoaderBase) = CType(Loader, Object).GetLoaderList()
             If RightCards.ContainsKey(Loader.Name) Then
                 '已有此卡片
-                Dim Card As Grid = RightCards(Loader.Name)
+                Dim Card As MyCard = RightCards(Loader.Name)
                 Dim NewValue As Double = Loader.Progress + Loader.State
                 If Val(Card.Tag) = NewValue Then Return
                 Card.Tag = NewValue
-                If Card.Children.Count <= 3 Then
-                    Logger.Warn($"元素不足的卡片：{Loader.Name}")
+                Dim ContentGrid = Card.Children.OfType(Of Grid).FirstOrDefault(Function(Element) Equals(Element.Tag, "TaskContent"))
+                If ContentGrid Is Nothing Then
+                    Logger.Warn($"找不到任务卡片内容：{Loader.Name}")
                     Return
                 End If
-                Card = Card.Children(3)
                 Try
                     Select Case Loader.State
                         Case LoadState.Failed
 #Region "失败，更新卡片"
-                            Card.RowDefinitions.Clear()
-                            Card.Children.Clear()
-                            Card.Children.Add(GetObjectFromXML("<Path xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" Stretch=""Uniform"" Tag=""Failed"" Data=""F1 M2.5,0 L0,2.5 7.5,10 0,17.5 2.5,20 10,12.5 17.5,20 20,17.5 12.5,10 20,2.5 17.5,0 10,7.5 2.5,0Z"" Height=""15"" Width=""15"" HorizontalAlignment=""Center"" Grid.Column=""0"" Grid.Row=""0"" Fill=""{DynamicResource ColorBrush3}"" Margin=""0,1,0,0"" VerticalAlignment=""Top""/>"))
+                            ContentGrid.RowDefinitions.Clear()
+                            ContentGrid.Children.Clear()
+                            ContentGrid.Children.Add(GetObjectFromXML("<Path xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" Stretch=""Uniform"" Tag=""Failed"" Data=""F1 M2.5,0 L0,2.5 7.5,10 0,17.5 2.5,20 10,12.5 17.5,20 20,17.5 12.5,10 20,2.5 17.5,0 10,7.5 2.5,0Z"" Height=""15"" Width=""15"" HorizontalAlignment=""Center"" Grid.Column=""0"" Grid.Row=""0"" Fill=""{DynamicResource ColorBrush3}"" Margin=""0,1,0,0"" VerticalAlignment=""Top""/>"))
                             Dim Tb As TextBlock = GetObjectFromXML("<TextBlock xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" TextWrapping=""Wrap"" HorizontalAlignment=""Left"" ToolTip=""单击复制错误详情"" Grid.Column=""1"" Grid.Row=""0"" Margin=""0,0,0,5"" />")
                             Tb.Text = Loader.Error.GetDisplay(True)
                             AddHandler Tb.MouseLeftButtonDown,
@@ -96,38 +96,38 @@ Public Class PageSpeedLeft
                                 ClipboardSet(sender.Text, False)
                                 Hint("已复制错误详情！", HintType.Green)
                             End Sub
-                            Card.Children.Add(Tb)
+                            ContentGrid.Children.Add(Tb)
 #End Region
                         Case LoadState.Finished, LoadState.Canceled
 #Region "完成或中断，销毁卡片并返回"
-                            AniDispose(CType(Card.Parent, MyCard), True, AddressOf TryReturnToHome)
+                            AniDispose(Card, True, AddressOf TryReturnToHome)
 #End Region
                         Case LoadState.Loading, LoadState.Waiting
 #Region "进度不同，更新卡片"
                             Try
-                                If Card.Children.Count < LoaderList.Count * 2 Then
-                                    Logger.Warn($"刷新任务管理卡片 {Loader.Name} 失败：卡片中仅有 {Card.Children.Count} 个子项，要求至少有 {LoaderList.Count * 2} 个子项")
+                                If ContentGrid.Children.Count < LoaderList.Count * 2 Then
+                                    Logger.Warn($"刷新任务管理卡片 {Loader.Name} 失败：卡片中仅有 {ContentGrid.Children.Count} 个子项，要求至少有 {LoaderList.Count * 2} 个子项")
                                     Exit Try
                                 End If
                                 Dim Row As Integer = 0
                                 For Each SubTask In LoaderList
                                     Select Case SubTask.State
                                         Case LoadState.Waiting
-                                            If CType(Card.Children(Row * 2), FrameworkElement).Tag <> "Waiting" Then
-                                                Card.Children.RemoveAt(Row * 2)
-                                                Card.Children.Insert(Row * 2, GetObjectFromXML("<Path xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:local=""clr-namespace:PCL;assembly=Plain Craft Launcher 2"" Stretch=""Uniform"" Tag=""Waiting"" Data=""F1 M5,0 a5,5 360 1 0 0,0.0001 m15,0 a5,5 360 1 0 0,0.0001 m15,0 a5,5 360 1 0 0,0.0001 Z"" Width=""18"" HorizontalAlignment=""Center"" Grid.Column=""0"" Grid.Row=""" & Row & """ Fill=""{DynamicResource ColorBrush3}"" Margin=""0,7,0,0"" VerticalAlignment=""Top"" Height=""6""/>"))
+                                            If CType(ContentGrid.Children(Row * 2), FrameworkElement).Tag <> "Waiting" Then
+                                                ContentGrid.Children.RemoveAt(Row * 2)
+                                                ContentGrid.Children.Insert(Row * 2, GetObjectFromXML("<Path xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:local=""clr-namespace:PCL;assembly=Plain Craft Launcher 2"" Stretch=""Uniform"" Tag=""Waiting"" Data=""F1 M5,0 a5,5 360 1 0 0,0.0001 m15,0 a5,5 360 1 0 0,0.0001 m15,0 a5,5 360 1 0 0,0.0001 Z"" Width=""18"" HorizontalAlignment=""Center"" Grid.Column=""0"" Grid.Row=""" & Row & """ Fill=""{DynamicResource ColorBrush3}"" Margin=""0,7,0,0"" VerticalAlignment=""Top"" Height=""6""/>"))
                                             End If
                                         Case LoadState.Loading
-                                            If CType(Card.Children(Row * 2), FrameworkElement).Tag <> "Loading" Then
-                                                Card.Children.RemoveAt(Row * 2)
-                                                Card.Children.Insert(Row * 2, GetObjectFromXML("<TextBlock xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:local=""clr-namespace:PCL;assembly=Plain Craft Launcher 2"" Text=""" & Math.Floor(SubTask.Progress * 100) & "%"" Tag=""Loading"" HorizontalAlignment=""Center"" Grid.Column=""0"" Grid.Row=""" & Row & """ Foreground=""{DynamicResource ColorBrush3}""/>"))
+                                            If CType(ContentGrid.Children(Row * 2), FrameworkElement).Tag <> "Loading" Then
+                                                ContentGrid.Children.RemoveAt(Row * 2)
+                                                ContentGrid.Children.Insert(Row * 2, GetObjectFromXML("<TextBlock xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:local=""clr-namespace:PCL;assembly=Plain Craft Launcher 2"" Text=""" & Math.Floor(SubTask.Progress * 100) & "%"" Tag=""Loading"" HorizontalAlignment=""Center"" Grid.Column=""0"" Grid.Row=""" & Row & """ Foreground=""{DynamicResource ColorBrush3}""/>"))
                                             Else
-                                                CType(Card.Children(Row * 2), TextBlock).Text = Math.Floor(SubTask.Progress * 100) & "%"
+                                                CType(ContentGrid.Children(Row * 2), TextBlock).Text = Math.Floor(SubTask.Progress * 100) & "%"
                                             End If
                                         Case LoadState.Finished
-                                            If CType(Card.Children(Row * 2), FrameworkElement).Tag <> "Finished" Then
-                                                Card.Children.RemoveAt(Row * 2)
-                                                Card.Children.Insert(Row * 2, GetObjectFromXML("<Path xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:local=""clr-namespace:PCL;assembly=Plain Craft Launcher 2"" Stretch=""Uniform"" Tag=""Finished"" Data=""F1 M 23.7501,33.25L 34.8334,44.3333L 52.2499,22.1668L 56.9999,26.9168L 34.8334,53.8333L 19.0001,38L 23.7501,33.25 Z"" Height=""16"" Width=""15"" HorizontalAlignment=""Center"" Grid.Column=""0"" Grid.Row=""" & Row & """ Fill=""{DynamicResource ColorBrush3}"" Margin=""0,3,0,0"" VerticalAlignment=""Top""/>"))
+                                            If CType(ContentGrid.Children(Row * 2), FrameworkElement).Tag <> "Finished" Then
+                                                ContentGrid.Children.RemoveAt(Row * 2)
+                                                ContentGrid.Children.Insert(Row * 2, GetObjectFromXML("<Path xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:local=""clr-namespace:PCL;assembly=Plain Craft Launcher 2"" Stretch=""Uniform"" Tag=""Finished"" Data=""F1 M 23.7501,33.25L 34.8334,44.3333L 52.2499,22.1668L 56.9999,26.9168L 34.8334,53.8333L 19.0001,38L 23.7501,33.25 Z"" Height=""16"" Width=""15"" HorizontalAlignment=""Center"" Grid.Column=""0"" Grid.Row=""" & Row & """ Fill=""{DynamicResource ColorBrush3}"" Margin=""0,3,0,0"" VerticalAlignment=""Top""/>"))
                                             End If
                                     End Select
                                     Row += 1
@@ -146,7 +146,7 @@ Public Class PageSpeedLeft
                     Dim CardXAML As String = "
                         <local:MyCard xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:local=""clr-namespace:PCL;assembly=Plain Craft Launcher 2""
                             Tag=""" & (Loader.Progress + Loader.State) & """ Title=""" & StringUtils.XmlEscape(Loader.Name) & """ Margin=""0,0,0,15"">
-                            <Grid Margin=""14,40,15,10"">
+                            <Grid Tag=""TaskContent"" Margin=""14,40,15,10"">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width=""50""/>
                                     <ColumnDefinition/>
@@ -181,6 +181,9 @@ Public Class PageSpeedLeft
                         Logger.Info($"出错的卡片内容：{vbCrLf}{CardXAML}")
                         Throw
                     End Try
+                    If ContainsDownloadLoader(Loader) Then
+                        AddAiDownloadGlow(Card)
+                    End If
                     FrmSpeedRight.PanMain.Children.Insert(0, Card)
                     RightCards.Add(Loader.Name, Card)
                     Logger.Info($"新建任务管理卡片：{Loader.Name}")
@@ -210,6 +213,58 @@ Public Class PageSpeedLeft
             Logger.Error(ex, "刷新任务管理显示失败")
         End Try
     End Sub
+
+    ''' <summary>
+    ''' 扫描完整任务树，包括不在任务卡正文中显示的下载节点。
+    ''' </summary>
+    Private Shared Function ContainsDownloadLoader(Loader As LoaderBase) As Boolean
+        If TypeOf Loader Is LoaderDownload Then Return True
+        If Not GeneralUtils.IsGenericInstanceOf(Loader, GetType(LoaderCombo(Of ))) Then Return False
+        For Each SubLoader As LoaderBase In CType(Loader, Object).Loaders
+            If ContainsDownloadLoader(SubLoader) Then Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' 为由自适应线路算法接管的下载任务添加旋转彩色边缘。
+    ''' </summary>
+    Private Shared Sub AddAiDownloadGlow(Card As MyCard)
+        Dim GlowLayer As New Grid With {.IsHitTestVisible = False, .Margin = New Thickness(-1)}
+        Dim GlowBorder As New Border With {
+            .CornerRadius = New CornerRadius(7), .BorderThickness = New Thickness(3),
+            .Opacity = 0.72, .Effect = New Effects.BlurEffect With {.Radius = 8},
+            .BorderBrush = CreateAiGlowBrush(7)
+        }
+        Dim EdgeBorder As New Border With {
+            .CornerRadius = New CornerRadius(6), .BorderThickness = New Thickness(2),
+            .Opacity = 0.9, .Margin = New Thickness(1),
+            .BorderBrush = CreateAiGlowBrush(7)
+        }
+        GlowLayer.Children.Add(GlowBorder)
+        GlowLayer.Children.Add(EdgeBorder)
+        Card.Children.Insert(2, GlowLayer)
+    End Sub
+
+    Private Shared Function CreateAiGlowBrush(SecondsPerTurn As Double) As LinearGradientBrush
+        Dim Rotation As New RotateTransform(0, 0.5, 0.5)
+        Dim Brush As New LinearGradientBrush With {
+            .StartPoint = New Point(0, 0.5), .EndPoint = New Point(1, 0.5),
+            .RelativeTransform = Rotation
+        }
+        Brush.GradientStops.Add(New GradientStop(Color.FromRgb(0, 210, 255), 0))
+        Brush.GradientStops.Add(New GradientStop(Color.FromRgb(91, 86, 255), 0.22))
+        Brush.GradientStops.Add(New GradientStop(Color.FromRgb(255, 65, 180), 0.45))
+        Brush.GradientStops.Add(New GradientStop(Color.FromRgb(255, 183, 48), 0.7))
+        Brush.GradientStops.Add(New GradientStop(Color.FromRgb(53, 235, 170), 0.86))
+        Brush.GradientStops.Add(New GradientStop(Color.FromRgb(0, 210, 255), 1))
+        Dim Animation As New System.Windows.Media.Animation.DoubleAnimation(0, 360, TimeSpan.FromSeconds(SecondsPerTurn)) With {
+            .RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
+        }
+        Rotation.BeginAnimation(RotateTransform.AngleProperty, Animation)
+        Return Brush
+    End Function
+
     Public Sub TaskRemove(Loader As Object)
         If RightCards.ContainsKey(Loader.Name) Then
             RunInUiWait(

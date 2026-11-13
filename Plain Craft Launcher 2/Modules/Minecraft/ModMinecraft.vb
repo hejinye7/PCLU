@@ -1,5 +1,10 @@
 Public Module ModMinecraft
 
+    ''' <summary>
+    ''' U 盘便携启动时使用的 Minecraft 文件夹。为空时沿用全局设置。
+    ''' </summary>
+    Public PortableMinecraftOverride As String = ""
+
 #Region "文件夹"
 
     ''' <summary>
@@ -7,7 +12,14 @@ Public Module ModMinecraft
     ''' </summary>
     Public Property McFolderSelected As String
         Get
-            If _McFolderSelected Is Nothing Then SetMcFolder(Settings.Get(Of String)("LaunchFolderSelect")) '不能使用 McFolderSelected 触发 Set，这会被视为为 Get 设置返回值
+            If _McFolderSelected Is Nothing Then
+                If PortableMinecraftOverride <> "" Then
+                    _McFolderSelected = PathUtils.AddSlashSuffix(PathUtils.ForCompare(PortableMinecraftOverride))
+                    Logger.Info($"便携模式 Minecraft 文件夹：{_McFolderSelected}")
+                Else
+                    SetMcFolder(Settings.Get(Of String)("LaunchFolderSelect")) '不能使用 McFolderSelected 触发 Set，这会被视为为 Get 设置返回值
+                End If
+            End If
             Return _McFolderSelected
         End Get
         Set(Value As String)
@@ -18,7 +30,7 @@ Public Module ModMinecraft
         If PathUtils.IsSame(_McFolderSelected, Value.Replace("$", Paths.Base)) Then Return
         _McFolderSelected = Value.Replace("$", Paths.Base)
         _McFolderSelected = PathUtils.AddSlashSuffix(PathUtils.ForCompare(_McFolderSelected))
-        Settings.Set("LaunchFolderSelect", Value.Replace(Paths.Base, "$"))
+        If PortableMinecraftOverride = "" Then Settings.Set("LaunchFolderSelect", Value.Replace(Paths.Base, "$"))
         Logger.Info($"当前选择的 Minecraft 文件夹：{_McFolderSelected}")
     End Sub
     Private _McFolderSelected As String
@@ -1861,19 +1873,14 @@ OnLoaded:
             End If
             If Token.Url IsNot Nothing Then
                 '获取 URL 的真实地址
-                Urls.Add(Token.Url)
+                If Token.Url.Contains("maven") Then
+                    Urls.AddRange(DlSourceLibraryGet(Token.Url))
+                Else
+                    Urls.Add(Token.Url)
+                End If
                 If Token.Url.Contains("launcher.mojang.com/v1/objects") OrElse Token.Url.Contains("client.txt") OrElse
                    Token.Url.Contains(".tsrg") Then
                     Urls.AddRange(DlSourceLauncherOrMetaGet(Token.Url)) 'Mappings（#4425）
-                End If
-                If Token.Url.Contains("maven") Then
-                    Dim BmclapiUrl As String =
-                        Token.Url.Replace(Token.Url.Substring(0, Token.Url.IndexOfF("maven")), "https://bmclapi2.bangbang93.com/").Replace("maven.fabricmc.net", "maven").Replace("maven.minecraftforge.net", "maven").Replace("maven.neoforged.net/releases", "maven")
-                    If DlSourcePreferMojang Then
-                        Urls.Add(BmclapiUrl) '官方源优先
-                    Else
-                        Urls.Insert(0, BmclapiUrl) '镜像源优先
-                    End If
                 End If
             End If
             If Token.LocalPath.Contains("transformer-discovery-service") Then

@@ -1,0 +1,32 @@
+<local:MyPageRight
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:PCL"
+    x:Class="PageDownloadCommunityClient"
+    PanScroll="PanBack">
+    <local:MyScrollViewer x:Name="PanBack" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="25,10,25,25">
+            <local:MyHint Margin="0,0,0,15" Theme="Blue" Text="从 LabyMod 官方分发服务安装游戏组件，安装后会作为独立实例出现在启动列表。" />
+            <local:MyCard Title="LabyMod" Margin="0,0,0,15">
+                <StackPanel Margin="20,40,20,18">
+                    <TextBlock Text="LabyMod 游戏组件" FontSize="15" />
+                    <TextBlock Text="选择官方渠道和 Minecraft 版本，PCLU 只下载 LabyMod 游戏组件与依赖，不安装第三方启动器。" Foreground="{DynamicResource ColorBrushGray2}" Margin="0,6,0,16" TextWrapping="Wrap" />
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="180" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="150" />
+                        </Grid.ColumnDefinitions>
+                        <local:MyComboBox x:Name="ComboLabyChannel" Grid.Column="0" Height="34" VerticalAlignment="Center" />
+                        <local:MyComboBox x:Name="ComboLabyMinecraft" Grid.Column="2" Height="34" VerticalAlignment="Center" />
+                        <TextBlock x:Name="TextLabyStatus" Grid.Column="4" VerticalAlignment="Center" Foreground="{DynamicResource ColorBrushGray2}" TextWrapping="Wrap" />
+                        <local:MyButton x:Name="BtnInstallLaby" Grid.Column="5" Text="安装 LabyMod" Height="35" VerticalAlignment="Center" IsEnabled="False" Click="InstallLaby_Click" />
+                    </Grid>
+                </StackPanel>
+            </local:MyCard>
+        </StackPanel>
+    </local:MyScrollViewer>
+</local:MyPageRight>

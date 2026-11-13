@@ -352,7 +352,8 @@ Public Class FormMain
         '尽早执行的加载池
         McFolderListLoader.Start(0) '为了让下载已存在文件检测可以正常运行，必须跑一次；为了让启动按钮尽快可用，需要尽早执行；为了与 PageLaunchLeft 联动，需要为 0 而不是 GetUuid
 
-        Logger.Info($"第二阶段加载用时：{GetTimeMs() - ApplicationStartTick} ms")
+        ApplicationStartPhase2 = GetTimeMs() - ApplicationStartTick
+        Logger.Info($"第二阶段加载用时：{ApplicationStartPhase2} ms")
     End Sub
     Private Sub FormMain_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         ApplicationStartTick = GetTimeMs()
@@ -461,7 +462,9 @@ Public Class FormMain
             End If
         End Sub, "初始化", ThreadPriority.Lowest)
 
-        Logger.Info($"第三阶段加载用时：{GetTimeMs() - ApplicationStartTick} ms")
+        ApplicationStartPhase3 = GetTimeMs() - ApplicationStartTick
+        Logger.Info($"第三阶段加载用时：{ApplicationStartPhase3} ms")
+        Settings.Set("CacheStartupPcllMs", CInt(ApplicationStartPhase1 + ApplicationStartPhase2 + ApplicationStartPhase3))
     End Sub
     '根据打开次数触发的事件
     Private Sub RunCountSub()
@@ -600,21 +603,21 @@ Public Class FormMain
                 Dim TransformScale As New ScaleTransform(1, 1)
                 PanBack.RenderTransform = New TransformGroup() With {.Children = New TransformCollection({TransformRotate, TransformPos, TransformScale})}
                 AniStart({
-                    AaOpacity(Me, -Opacity, 140, 40, New AniEaseOutFluent(AniEasePower.Weak)),
+                    AaOpacity(Me, -Opacity, 190, 25, New AniEaseInFluent(AniEasePower.Weak)),
                     AaDouble(
                     Sub(i)
                         TransformScale.ScaleX += i
                         TransformScale.ScaleY += i
-                    End Sub, 0.88 - TransformScale.ScaleX, 180),
-                    AaDouble(Sub(i) TransformPos.Y += i, 20 - TransformPos.Y, 180, 0, New AniEaseOutFluent(AniEasePower.Weak)),
-                    AaDouble(Sub(i) TransformRotate.Angle += i, 0.6 - TransformRotate.Angle, 180, 0, New AniEaseInoutFluent(AniEasePower.Weak)),
+                    End Sub, 0.94 - TransformScale.ScaleX, 230, 0, New AniEaseInoutFluent(AniEasePower.Weak)),
+                    AaDouble(Sub(i) TransformPos.Y += i, 12 - TransformPos.Y, 230, 0, New AniEaseInFluent(AniEasePower.Weak)),
+                    AaDouble(Sub(i) TransformRotate.Angle += i, 0.25 - TransformRotate.Angle, 230, 0, New AniEaseInoutFluent(AniEasePower.Weak)),
                     AaCode(
                     Sub()
                         IsHitTestVisible = False
                         Top = -10000
                         ShowInTaskbar = False
-                    End Sub, 210),
-                    AaCode(AddressOf EndProgramForce, 230)
+                    End Sub, 245),
+                    AaCode(AddressOf EndProgramForce, 265)
                 }, "Form Close")
             Else
                 EndProgramForce()
@@ -902,7 +905,6 @@ Public Class FormMain
             Logger.Error(ex, "切回窗口时出错")
         End Try
         '读取剪贴板，自动加入联机房间
-        Return 'TODO: 联机复活赛
         If PageLinkMain.LinkState <> PageLinkMain.LinkStates.Waiting Then Return '已启动联机
         If PageCurrent = PageType.Link Then Return '已在联机界面
         Dim Code = ClipboardGetText() : If Code Is Nothing Then Return '剪贴板无文本
@@ -1242,6 +1244,7 @@ Public Class FormMain
         DownloadDataPack = 4
         DownloadResourcePack = 5
         DownloadShader = 6
+        DownloadCommunityClient = 7
         SetupLaunch = 0
         SetupLink = 1
         SetupUI = 2
