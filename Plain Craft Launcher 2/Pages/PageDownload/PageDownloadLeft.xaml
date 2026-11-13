@@ -54,8 +54,16 @@
                     </x:Array>
                 </local:MyListItem.Buttons>
             </local:MyListItem>
+            <local:MyListItem x:Name="ItemFavorites" Type="RadioBox" IsScaleAnimationEnabled="False" Tag="8" MinPaddingRight="35" Height="36" VerticalAlignment="Top" Title="收藏夹"
+                          LogoScale="0.9" Logo="M700 156c-75 0-144 73-190 127-46-54-115-127-190-127-135 0-244 106-244 236 0 78 39 132 71 176 92 127 323 285 333 292 9 6 20 10 31 10s22-4 31-10c10-7 241-165 333-292 32-44 71-98 71-176 0-130-110-236-245-236z" />
             <local:MyListItem x:Name="ItemCommunityClient" Type="RadioBox" IsScaleAnimationEnabled="False" Tag="7" MinPaddingRight="35" Height="36" VerticalAlignment="Top" Title="LabyMod"
-                          LogoScale="0.9" Logo="M256 128h512v128H256zM128 384h768v128H128zM256 640h512v128H256z" />
+                          LogoScale="0.9" Logo="M256 128h512v128H256zM128 384h768v128H128zM256 640h512v128H256z">
+                <local:MyListItem.Buttons>
+                    <x:Array Type="{x:Type local:MyIconButton}">
+                        <local:MyIconButton Tag="7" ToolTip="刷新" LogoScale="0.85" Click="Refresh_Click" Logo="M512 838c-80 0-153-29-210-77l76-76c11-11 26-22 26-37a27 27 0 0 0-27-27H104c-27 0-27 24-27 27v272a27 27 0 0 0 27 27c15 0 28-17 43-31l78-78c77 68 177 109 287 109 222 0 405-166 431-381H833c-26 154-160 272-321 272zM920 77c-15 0-28 17-43 31l-78 78c-77-68-177-109-287-109-222 0-405 166-431 381h110c26-154 160-272 321-272 80 0 153 29 210 77l-76 76c-12 12-26 22-26 37a27 27 0 0 0 27 27h272c27 0 27-24 27-27V104a27 27 0 0 0-27-27z" />
+                    </x:Array>
+                </local:MyListItem.Buttons>
+            </local:MyListItem>
         </StackPanel>
     </local:MyScrollViewer>
 </local:MyPageLeft>

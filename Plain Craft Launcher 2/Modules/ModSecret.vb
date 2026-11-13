@@ -208,10 +208,80 @@ Friend Module ModSecret
             End Sub, "PCLU Update Check", ThreadPriority.BelowNormal)
     End Sub
 
+    ''' <summary>
+    ''' PCLU 默认的强制更新检查：下载完成后由独立进程替换并重启。
+    ''' </summary>
+    Friend Sub UpdateCheckAutomatic()
+        If Environment.GetCommandLineArgs().Contains("--update") Then Return
+        RunInNewThread(
+            Sub()
+                Try
+                    Dim Manifest = GetLauncherUpdateManifest()
+                    Dim LatestCode = Manifest("versionCode").Value(Of Integer)()
+                    If LatestCode <= VersionCode Then Return
+                    Dim DownloadUrls As New List(Of String)
+                    If Manifest("downloadUrls") IsNot Nothing Then DownloadUrls.AddRange(Manifest("downloadUrls").Values(Of String)())
+                    If Not String.IsNullOrWhiteSpace(Manifest("downloadUrl")?.ToString()) Then DownloadUrls.Add(Manifest("downloadUrl").ToString())
+                    If Not DownloadUrls.Any() Then Throw New Exception("更新清单没有可用的下载地址。")
+                    Dim NewFile = Paths.Base & "PCL\Update\PCLU.new.exe"
+                    DirectoryUtils.Create(PathUtils.RemoveLastPart(NewFile))
+                    Dim LastException As Exception = Nothing
+                    For Each Url In DownloadUrls.Distinct()
+                        Try
+                            NetDownloadByClient(Url, NewFile, SimulateBrowserHeaders:=True)
+                            If New FileInfo(NewFile).Length < 100000 Then Throw New Exception("更新文件体积异常。")
+                            LastException = Nothing
+                            Exit For
+                        Catch ex As Exception
+                            LastException = ex
+                            FileUtils.Delete(NewFile)
+                        End Try
+                    Next
+                    If LastException IsNot Nothing Then Throw LastException
+                    IsUpdateWaitingRestart = True
+                    RunInUi(Sub() Hint($"PCLU {Manifest("version")} 已下载，正在重启替换……", HintType.Green))
+                    Thread.Sleep(500)
+                    UpdateRestart(True)
+                Catch ex As Exception
+                    Logger.Warn(ex, "PCLU 自动更新失败")
+                End Try
+            End Sub, "PCLU Forced Update", ThreadPriority.BelowNormal)
+    End Sub
+
     Friend IsUpdateWaitingRestart As Boolean = False
     Public Sub UpdateRestart(TriggerRestartAndByEnd As Boolean)
+        If Not IsUpdateWaitingRestart Then Return
+        Dim NewFile = Paths.Base & "PCL\Update\PCLU.new.exe"
+        If Not File.Exists(NewFile) Then Return
+        Try
+            StartProcess(PathExe, $"--update {Process.GetCurrentProcess().Id} ""{PathExe}"" ""{NewFile}"" {If(TriggerRestartAndByEnd, "True", "False")}")
+            IsUpdateWaitingRestart = False
+            If TriggerRestartAndByEnd Then RunInUi(Sub() FormMain.EndProgramForce(ProcessReturnValues.Success))
+        Catch ex As Exception
+            Logger.Error(ex, "启动 PCLU 更新替换进程失败")
+        End Try
     End Sub
     Public Sub UpdateReplace(ProcessId As Integer, OldFileName As String, NewFileName As String, TriggerRestart As Boolean)
+        Try
+            Dim StartWait = Date.Now
+            Do
+                Try
+                    Using OldProcess = Process.GetProcessById(ProcessId)
+                        If OldProcess.HasExited Then Exit Do
+                    End Using
+                Catch
+                    Exit Do
+                End Try
+                Thread.Sleep(100)
+            Loop While (Date.Now - StartWait).TotalSeconds < 30
+            If File.Exists(NewFileName) Then
+                File.Copy(NewFileName, OldFileName, True)
+                FileUtils.Delete(NewFileName)
+            End If
+            If TriggerRestart Then StartProcess(OldFileName)
+        Catch ex As Exception
+            Logger.Error(ex, "替换 PCLU 主程序失败")
+        End Try
     End Sub
 
     ''' <summary>

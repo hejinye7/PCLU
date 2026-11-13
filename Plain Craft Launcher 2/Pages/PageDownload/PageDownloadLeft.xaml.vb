@@ -21,7 +21,7 @@ Public Class PageDownloadLeft
     ''' <summary>
     ''' 勾选事件改变页面。
     ''' </summary>
-    Private Sub PageCheck(sender As FrameworkElement, e As RouteEventArgs) Handles ItemInstall.Check, ItemMod.Check, ItemPack.Check, ItemResourcePack.Check, ItemShader.Check, ItemDataPack.Check, ItemCommunityClient.Check
+    Private Sub PageCheck(sender As FrameworkElement, e As RouteEventArgs) Handles ItemInstall.Check, ItemMod.Check, ItemPack.Check, ItemResourcePack.Check, ItemShader.Check, ItemDataPack.Check, ItemCommunityClient.Check, ItemFavorites.Check
         '尚未初始化控件属性时，sender.Tag 为 Nothing，会导致切换到页面 0
         '若使用 IsLoaded，则会导致模拟点击不被执行（模拟点击切换页面时，控件的 IsLoaded 为 False）
         If sender.Tag IsNot Nothing Then PageChange(Val(sender.Tag))
@@ -51,6 +51,9 @@ Public Class PageDownloadLeft
             Case FormMain.PageSubType.DownloadCommunityClient
                 If FrmDownloadCommunityClient Is Nothing Then FrmDownloadCommunityClient = New PageDownloadCommunityClient
                 Return FrmDownloadCommunityClient
+            Case FormMain.PageSubType.DownloadFavorite
+                If FrmDownloadFavorites Is Nothing Then FrmDownloadFavorites = New PageDownloadFavorites
+                Return FrmDownloadFavorites
             Case Else
                 Throw New Exception("未知的下载子页面种类：" & ID)
         End Select
@@ -151,7 +154,11 @@ Public Class PageDownloadLeft
                 End If
                 ItemDataPack.Checked = True
             Case FormMain.PageSubType.DownloadCommunityClient
+                If FrmDownloadCommunityClient IsNot Nothing Then FrmDownloadCommunityClient.RefreshPage()
                 ItemCommunityClient.Checked = True
+            Case FormMain.PageSubType.DownloadFavorite
+                If FrmDownloadFavorites IsNot Nothing Then FrmDownloadFavorites.RefreshFavorites()
+                ItemFavorites.Checked = True
         End Select
         Hint("正在刷新……", Log:=False)
     End Sub

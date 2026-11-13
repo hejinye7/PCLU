@@ -49,6 +49,10 @@ Public Class PageDownloadCommunityClient
         End Try
     End Function
 
+    Public Async Sub RefreshPage()
+        If IsLoaded Then Await LoadLabyVersionsAsync()
+    End Sub
+
     Private Sub InstallLaby_Click(sender As Object, e As MouseButtonEventArgs) Handles BtnInstallLaby.Click
         If ComboLabyMinecraft.SelectedItem Is Nothing OrElse ComboLabyChannel.SelectedItem Is Nothing OrElse LabyManifest Is Nothing Then Return
         Try

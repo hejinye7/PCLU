@@ -1,5 +1,41 @@
 Public Class MyResourceItem
 
+    Public ReadOnly FavoriteButton As MyIconButton
+    Private FavoriteProject As ResourceProject
+
+    Public Sub New()
+        InitializeComponent()
+        FavoriteButton = New MyIconButton With {
+            .Width = 26, .Height = 26, .HorizontalAlignment = HorizontalAlignment.Right,
+            .VerticalAlignment = VerticalAlignment.Center, .Margin = New Thickness(0, 0, 3, 0),
+            .ToolTip = "收藏", .LogoScale = 0.72, .Opacity = 0.8}
+        Grid.SetRow(FavoriteButton, 1)
+        Grid.SetColumn(FavoriteButton, 4)
+        Children.Add(FavoriteButton)
+        AddHandler FavoriteButton.Click, AddressOf FavoriteButton_Click
+    End Sub
+
+    Public Sub InitFavorite(Project As ResourceProject)
+        FavoriteProject = Project
+        RefreshFavoriteButton()
+    End Sub
+
+    Private Sub RefreshFavoriteButton()
+        If FavoriteProject Is Nothing Then Return
+        Dim IsFavorite = ResourceFavorites.Contains(FavoriteProject)
+        FavoriteButton.Logo = If(IsFavorite, Logo.IconButtonLikeFill, Logo.IconButtonLikeLine)
+        FavoriteButton.ToolTip = If(IsFavorite, "取消收藏", "收藏")
+        FavoriteButton.Foreground = If(IsFavorite, New MyColor("#FFCC4D"), Nothing)
+    End Sub
+
+    Private Sub FavoriteButton_Click(sender As Object, e As MouseButtonEventArgs)
+        If FavoriteProject Is Nothing Then Return
+        ResourceFavorites.Toggle(FavoriteProject)
+        RefreshFavoriteButton()
+        If FrmDownloadFavorites IsNot Nothing AndAlso FrmDownloadFavorites.IsLoaded Then FrmDownloadFavorites.RefreshFavorites()
+        e.Handled = True
+    End Sub
+
 #Region "基础属性"
     Public Uuid As Integer = GetUuid()
 

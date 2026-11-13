@@ -213,6 +213,7 @@
     <Compile Include="Modules\Base\PclLogger.vb" />
     <Compile Include="Modules\Resource\LocalResourceFile.vb" />
     <Compile Include="Modules\Resource\ResourceProject.vb" />
+    <Compile Include="Modules\Resource\ResourceFavorites.vb" />
     <Compile Include="Modules\Resource\ResourceVersion.vb" />
     <Compile Include="Modules\Resource\ResourceSearcher.vb" />
     <Compile Include="Modules\Minecraft\ModJava.vb" />
@@ -285,6 +286,9 @@
     </Compile>
     <Compile Include="Pages\PageDownload\PageDownloadCommunityClient.xaml.vb">
       <DependentUpon>PageDownloadCommunityClient.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Pages\PageDownload\PageDownloadFavorites.xaml.vb">
+      <DependentUpon>PageDownloadFavorites.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\PageDownload\PageDownloadModify.vb" />
     <Compile Include="Pages\PageDownload\Resource\PageDownloadCompDetail.xaml.vb">
@@ -537,6 +541,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Pages\PageDownload\PageDownloadCommunityClient.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Pages\PageDownload\PageDownloadFavorites.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

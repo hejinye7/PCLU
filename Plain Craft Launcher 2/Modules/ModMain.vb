@@ -385,6 +385,7 @@ EndHint:
     Public FrmDownloadShader As PageDownloadShader
     Public FrmDownloadResourcePack As PageDownloadResourcePack
     Public FrmDownloadCommunityClient As PageDownloadCommunityClient
+    Public FrmDownloadFavorites As PageDownloadFavorites
 
     '设置页面声明
     Public FrmSetupLeft As PageSetupLeft

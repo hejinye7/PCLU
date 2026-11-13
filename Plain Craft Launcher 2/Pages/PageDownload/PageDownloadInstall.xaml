@@ -104,6 +104,18 @@
                             </Grid>
                             <local:MyIconButton x:Name="BtnMinecraftRestore" Style="{StaticResource ModifyRestoreButton}" Theme="Black" LogoScale="0.55" Logo="{StaticResource ModifyRestoreLogo}" />
                         </local:MyCard>
+                        <local:MyCard Title="LabyMod" Height="40" Margin="0,12,0,0" x:Name="CardLabyMod" IsSwapped="True" CanSwap="False" SwapLogoRight="True">
+                            <Grid Height="40" VerticalAlignment="Top" Background="Transparent">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LabLabyMod" Grid.Column="0" VerticalAlignment="Center" Margin="132,0,10,0" Foreground="{DynamicResource ColorBrushGray4}" Text="选择后将使用 LabyMod 官方组件" />
+                                <local:MyComboBox x:Name="ComboLabyModChannel" Grid.Column="1" Width="110" Height="30" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <local:MyButton x:Name="BtnLabyModSelect" Grid.Column="2" Text="选择" Width="80" Height="30" VerticalAlignment="Center" Margin="0,0,32,0" />
+                            </Grid>
+                        </local:MyCard>
                         <local:MyCard Title="Forge" Height="40" Margin="0,12,0,0" x:Name="CardForge" IsSwapped="True" CanSwap="True" SwapLogoRight="True">
                         <StackPanel Margin="20,40,18,15" VerticalAlignment="Top" Name="PanForge" />
                         <Grid x:Name="PanForgeInfo" Height="18" Margin="132,11,15,0" VerticalAlignment="Top" Tag="True">

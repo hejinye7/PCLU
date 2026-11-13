@@ -530,6 +530,7 @@ Public Class ResourceProject
         Return New MyVirtualizingElement(Of MyResourceItem)(
         Function()
             Dim NewItem As New MyResourceItem With {.Tag = Me}
+            NewItem.InitFavorite(Me)
             ApplyLogoToMyImage(NewItem.PathLogo)
             Dim Titles = GetControlTitle(True)
             NewItem.Title = Titles.Title

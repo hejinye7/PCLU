@@ -445,6 +445,7 @@ Public Class FormMain
                 RunCountSub()
                 ServerLoader.Start()
                 RunInNewThread(AddressOf TryClearTaskTemp, "TryClearTaskTemp", ThreadPriority.BelowNormal)
+                If Settings.Get(Of Integer)("SystemSystemUpdate") = 0 Then UpdateCheckAutomatic()
             Catch ex As Exception
                 Logger.Error(ex, "初始化加载池运行失败")
             End Try
@@ -1244,6 +1245,7 @@ Public Class FormMain
         DownloadResourcePack = 5
         DownloadShader = 6
         DownloadCommunityClient = 7
+        DownloadFavorite = 8
         SetupLaunch = 0
         SetupLink = 1
         SetupUI = 2

@@ -1,4 +1,63 @@
+Imports Newtonsoft.Json.Linq
+
 Public Class PageDownloadInstall
+    Private SelectedLabyMod As Boolean = False
+    Private LabyModCommit As String = Nothing
+
+    Private Sub PageDownloadInstall_InitializeLaby(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
+        If ComboLabyModChannel.Items.Count > 0 Then Return
+        ComboLabyModChannel.Items.Add(New MyComboBoxItem With {.Content = "正式版", .Tag = "production"})
+        ComboLabyModChannel.Items.Add(New MyComboBoxItem With {.Content = "预览版", .Tag = "snapshot"})
+        ComboLabyModChannel.SelectedIndex = 0
+    End Sub
+
+    Private Async Sub BtnLabyModSelect_Click(sender As Object, e As MouseButtonEventArgs) Handles BtnLabyModSelect.Click
+        If SelectedLabyMod Then
+            SelectedLabyMod = False
+            LabyModCommit = Nothing
+            BtnLabyModSelect.Text = "选择"
+            LabLabyMod.Text = "选择后将使用 LabyMod 官方组件"
+            ReloadSelected()
+            Return
+        End If
+        If VanillaName Is Nothing OrElse ComboLabyModChannel.SelectedItem Is Nothing Then Return
+        BtnLabyModSelect.IsEnabled = False
+        LabLabyMod.Text = "正在读取 LabyMod 官方清单……"
+        Try
+            Dim Channel = CStr(CType(ComboLabyModChannel.SelectedItem, MyComboBoxItem).Tag)
+            Dim Manifest As JObject = Nothing
+            Await Task.Run(Sub()
+                               Manifest = NetRequestByClientRetry($"https://releases.r2.labymod.net/api/v1/manifest/{Channel}/latest.json", RequireJson:=True).DeserializeJson(Of JObject)()
+                           End Sub)
+            If Not CType(Manifest("minecraftVersions"), JArray).Any(Function(Item) Item("version")?.ToString() = VanillaName) Then
+                Throw New Exception("当前 Minecraft 版本没有 LabyMod 官方组件。")
+            End If
+            LabyModCommit = Manifest("commitReference").ToString()
+            SelectedLabyMod = True
+            BtnLabyModSelect.Text = "取消"
+            LabLabyMod.Text = $"LabyMod {Manifest("labyModVersion")} · 已选择"
+            ClearNonLabyModSelection()
+            ReloadSelected()
+        Catch ex As Exception
+            LabLabyMod.Text = "无法读取 LabyMod 官方清单"
+            Logger.Error(ex, "在原版安装页选择 LabyMod 失败")
+            MyMsgBox("无法选择 LabyMod：" & ex.GetDisplay(False), "LabyMod", "确定")
+        Finally
+            BtnLabyModSelect.IsEnabled = True
+        End Try
+    End Sub
+
+    Private Sub ClearNonLabyModSelection()
+        SelectedOptiFine = Nothing
+        SelectedLiteLoader = Nothing
+        SelectedForge = Nothing
+        SelectedNeoForge = Nothing
+        SelectedFabric = Nothing
+        SelectedFabricApi = Nothing
+        SelectedOptiFabric = Nothing
+        AutoSelectedFabricApi = False
+        AutoSelectedOptiFabric = False
+    End Sub
 
     Public Sub ControlInit()
         DisabledPageAnimControls.Add(BtnStart)
@@ -187,6 +246,11 @@ Public Class PageDownloadInstall
         SelectNameUpdate()
         ImgLogo.Source = GetSelectLogo()
         ImgMinecraft.Source = VanillaIcon
+        CardLabyMod.Visibility = If(VanillaName Is Nothing, Visibility.Collapsed, Visibility.Visible)
+        CardLabyMod.IsEnabled = True
+        For Each OtherCard In {CardOptiFine, CardLiteLoader, CardForge, CardNeoForge, CardFabric, CardFabricApi, CardOptiFabric}
+            OtherCard.IsEnabled = Not SelectedLabyMod
+        Next
         'OptiFine
         Dim OptiFineError As String = LoadOptiFineGetError()
         CardOptiFine.MainSwap.Visibility = If(OptiFineError Is Nothing, Visibility.Visible, Visibility.Collapsed)
@@ -370,6 +434,9 @@ Public Class PageDownloadInstall
         SelectedFabric = Nothing
         SelectedFabricApi = Nothing
         SelectedOptiFabric = Nothing
+        SelectedLabyMod = False
+        LabyModCommit = Nothing
+        If BtnLabyModSelect IsNot Nothing Then BtnLabyModSelect.Text = "选择"
         For Each ClearButton In {BtnOptiFineClear, BtnLiteLoaderClear, BtnForgeClear, BtnNeoForgeClear,
                                  BtnFabricClear, BtnFabricApiClear, BtnOptiFabricClear}
             ClearButton.Visibility = Visibility.Collapsed
@@ -396,6 +463,7 @@ Public Class PageDownloadInstall
     ''' 获取版本图标。
     ''' </summary>
     Public Overridable Function GetSelectLogo() As String
+        If SelectedLabyMod Then Return "pack://application:,,,/images/icon.ico"
         If SelectedFabric IsNot Nothing Then
             Return "pack://application:,,,/images/Blocks/Fabric.png"
         ElseIf SelectedForge IsNot Nothing Then
@@ -417,6 +485,7 @@ Public Class PageDownloadInstall
     ''' </summary>
     Public Function GetSelectName() As String
         Dim Name As String = VanillaName
+        If SelectedLabyMod Then Return Name & "-LabyMod"
         If SelectedFabric IsNot Nothing Then Name += "-Fabric " & SelectedFabric.BeforeFirst("+")
         If SelectedForge IsNot Nothing Then Name += "-Forge_" & SelectedForge.VersionName
         If SelectedNeoForge IsNot Nothing Then Name += "-NeoForge_" & SelectedNeoForge.VersionName.BeforeFirst("+")
@@ -1159,7 +1228,9 @@ Public Class PageDownloadInstall
             .NeoForgeEntry = SelectedNeoForge,
             .FabricApi = SelectedFabricApi,
             .OptiFabric = SelectedOptiFabric,
-            .LiteLoaderEntry = SelectedLiteLoader
+            .LiteLoaderEntry = SelectedLiteLoader,
+            .LabyModChannel = If(SelectedLabyMod, CStr(CType(ComboLabyModChannel.SelectedItem, MyComboBoxItem).Tag), Nothing),
+            .LabyModCommitReference = If(SelectedLabyMod, LabyModCommit, Nothing)
         }
         StartInstall(Request)
     End Sub
