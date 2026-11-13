@@ -2,9 +2,9 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.3",
-  "versionCode": 421,
-  "releaseNotes": "新增社区资源收藏夹、LabyMod 组件和强制更新替换。",
+  "version": "1.0.4",
+  "versionCode": 423,
+  "releaseNotes": "更新检查改为 PCLU 内部下载、替换并重启。",
   "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
   "downloadUrls": [
     "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",

@@ -194,9 +194,8 @@ Friend Module ModSecret
                     RunInUi(
                         Sub()
                             If LatestCode > VersionCode Then
-                                If MyMsgBox($"发现 PCLU 新版本 {LatestVersion}。{vbCrLf}当前版本：{VersionBaseName}", "PCLU 更新", "打开下载", "取消") = 1 AndAlso Not String.IsNullOrWhiteSpace(DownloadUrl) Then
-                                    OpenWebsite(DownloadUrl)
-                                End If
+                                Hint($"发现 PCLU 新版本 {LatestVersion}，正在内部下载……", HintType.Blue)
+                                UpdateCheckAutomatic()
                             Else
                                 MyMsgBox($"当前已是最新版本（{VersionBaseName}）。", "PCLU 更新", "确定")
                             End If
