@@ -25,7 +25,9 @@ Public Class MyResourceItem
         Dim IsFavorite = ResourceFavorites.Contains(FavoriteProject)
         FavoriteButton.Logo = If(IsFavorite, Logo.IconButtonLikeFill, Logo.IconButtonLikeLine)
         FavoriteButton.ToolTip = If(IsFavorite, "取消收藏", "收藏")
-        FavoriteButton.Foreground = If(IsFavorite, New MyColor("#FFCC4D"), Nothing)
+        FavoriteButton.Foreground = If(IsFavorite,
+                                      New SolidColorBrush(Color.FromRgb(255, 204, 77)),
+                                      New SolidColorBrush(Color.FromRgb(128, 128, 128)))
     End Sub
 
     Private Sub FavoriteButton_Click(sender As Object, e As MouseButtonEventArgs)

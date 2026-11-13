@@ -11,6 +11,9 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 435 Then 'Release 1.0.0.2
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：下载社区资源列表时，收藏按钮颜色初始化触发空引用并导致启动器崩溃"))
+            End If
             If LastVersion < 433 Then 'Release 1.0.0.1
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：可下载海岸、山湖、森林图片主题包和循环视频主题包"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：主题透明度、背景柔化和氛围色设置"))
@@ -130,6 +133,9 @@ Public Class FormMain
                 BugCount += 21
             End If
         Else
+            If LastVersion < 436 Then 'Snapshot 1.0.0.2
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：下载社区资源列表时，收藏按钮颜色初始化触发空引用并导致启动器崩溃"))
+            End If
             If LastVersion < 434 Then 'Snapshot 1.0.0.1
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：可下载的图片与循环视频主题包，以及主题外观设置"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：任务管理器同名任务卡片冲突，失败任务会保留以便查看"))

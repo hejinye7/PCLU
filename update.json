@@ -2,9 +2,9 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.0.1",
-  "versionCode": 433,
-  "releaseNotes": "PCLU 1.0.0.1：新增海岸、山湖、森林图片主题包和循环视频主题包，可在个性化设置中下载应用；新增主题透明度、背景柔化和氛围色设置；修复下载任务管理异常并优化并发安装；移除联机高级设置与个性化基础区的赞助开发提示。旧版本曾出现下载页面无响应、任务管理异常、并行安装冲突和下载末段速度显示偏低等问题；末段速度偏低仍需结合实际下载观察。PCLU 是个人开发者维护的第三方修改版，与原版 Plain Craft Launcher 无关联。",
+  "version": "1.0.0.2",
+  "versionCode": 435,
+  "releaseNotes": "PCLU 1.0.0.2：修复下载社区资源列表时收藏按钮颜色初始化触发空引用并导致启动器崩溃。",
   "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
   "downloadUrls": [
     "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
