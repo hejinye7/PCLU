@@ -64,6 +64,8 @@
                     </x:Array>
                 </local:MyListItem.Buttons>
             </local:MyListItem>
+            <local:MyListItem x:Name="ItemBedrock" Type="RadioBox" IsScaleAnimationEnabled="False" Tag="9" MinPaddingRight="35" Height="36" VerticalAlignment="Top" Title="基岩版"
+                          LogoScale="0.9" Logo="M512 64 64 320v384l448 256 448-256V320L512 64zm0 96 336 192-336 192-336-192 336-192zM160 408l320 183v273L160 681V408zm704 0v273L544 864V591l320-183z" />
         </StackPanel>
     </local:MyScrollViewer>
 </local:MyPageLeft>

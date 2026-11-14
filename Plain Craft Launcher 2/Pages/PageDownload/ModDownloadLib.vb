@@ -2063,7 +2063,7 @@ Retry:
         Try
             Dim Loader As New LoaderCombo(Of String)(Request.NewInstanceName & " 安装", McInstallLoadersGet(Request)) With {
                 .OnStateChanged = Sub(Task)
-                                      McInstallState(Task)
+                                      McInstallState(Task, Request.NewInstanceName, Request.InstanceFolder)
                                       If Task.State = LoadState.Finished Then
                                           SyncLock InstallTargetsLock
                                               InstallTargets.Remove(InstallKey)
@@ -2253,12 +2253,27 @@ Retry:
     ''' <summary>
     ''' 安装加载器状态改变后进行提示和重载文件夹列表的方法。
     ''' </summary>
-    Public Sub McInstallState(Loader As LoaderBase)
+    Public Sub McInstallState(Loader As LoaderBase, Optional SelectInstanceName As String = Nothing, Optional InstanceFolder As String = Nothing)
         Select Case Loader.State
             Case LoadState.Finished
                 WriteIni(McFolderSelected & "PCL.ini", "InstanceCache", "") '清空缓存（合并安装会先生成文件夹，这会在刷新时误判为可以使用缓存）
+                If Not String.IsNullOrWhiteSpace(SelectInstanceName) Then
+                    Try
+                        Dim InstanceDirectory As New DirectoryInfo(If(InstanceFolder, ""))
+                        Dim VersionsDirectory = InstanceDirectory.Parent
+                        Dim MinecraftDirectory = If(VersionsDirectory Is Nothing, Nothing, VersionsDirectory.Parent)
+                        If MinecraftDirectory IsNot Nothing AndAlso
+                           String.Equals(VersionsDirectory.Name, "versions", StringComparison.OrdinalIgnoreCase) AndAlso
+                           String.Equals(InstanceDirectory.Name, SelectInstanceName, StringComparison.OrdinalIgnoreCase) AndAlso
+                           PathUtils.IsSame(PathUtils.AddSlashSuffix(MinecraftDirectory.FullName), McFolderSelected) Then
+                            WriteIni(Path.Combine(MinecraftDirectory.FullName, "PCL.ini"), "Version", SelectInstanceName)
+                            Logger.Info($"安装完成，已将启动页默认版本切换为：{SelectInstanceName}")
+                        End If
+                    Catch ex As Exception
+                        Logger.Warn(ex, $"安装完成后设置默认版本失败：{SelectInstanceName}")
+                    End Try
+                End If
                 Hint(Loader.Name & "成功！", HintType.Green)
-                'TODO: 自动选择安装成功的版本
             Case LoadState.Failed
                 Hint(Loader.Name & "失败，详情已保留在任务管理中。", HintType.Red)
             Case LoadState.Canceled

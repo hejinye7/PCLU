@@ -137,6 +137,12 @@
                     </Image>
                 </Grid>
             </local:MyCard>
+            <local:MyCard Margin="0,0,0,15" Title="上游与第三方鸣谢">
+                <StackPanel Margin="25,39,23,20">
+                    <TextBlock Text="PCLU 使用了公开项目、开源组件及社区服务。感谢各项目作者和维护者：" TextWrapping="Wrap" Margin="0,0,0,8" />
+                    <TextBlock Text="PCL（龙腾猫跃）：启动器上游项目与部分代码；Newtonsoft.Json、Ookii.Dialogs.Wpf：开源组件；Fabric、Forge、NeoForge、Modrinth、LabyMod：游戏加载器或资源分发服务；Eclipse Temurin：Java 运行时发行版；BMCLAPI、重庆大学开源软件镜像站：下载镜像；EasyTier：联机组件。各项目版权、商标与许可归其所有者所有。" TextWrapping="Wrap" />
+                </StackPanel>
+            </local:MyCard>
             <local:MyCard Margin="0,0,0,15" Title="赞助者">
                 <StackPanel Margin="25,40,19,20">
                     <TextBlock HorizontalAlignment="Left" Text="以下是近期的高级赞助者们！感谢大家对 PCL 的支持！！！" Margin="0,0,25,5.5" TextTrimming="None" TextWrapping="WrapWithOverflow" />
@@ -1442,7 +1448,7 @@
                     <TextBlock Text="隐私声明与个人信息保护政策" TextWrapping="Wrap" Margin="0,10,0,4" FontWeight="Bold" />
                     <TextBlock Margin="0,0,0,2" LineHeight="17" Text="PCL 没有收集个人信息，所以这里其实啥都不用写……&#xa;留个这个其实只是为了让你知道 PCL 没有收集个人信息，诶嘿。" TextWrapping="Wrap" />
                     <TextBlock Text="PCLU 项目说明" TextWrapping="Wrap" Margin="0,10,0,4" FontWeight="Bold" />
-                    <TextBlock Margin="0,0,0,2" LineHeight="17" Text="PCLU（Plain Craft Launcher Ultra，PCL 旗舰版）是个人开发者维护的第三方修改版，与原版 Plain Craft Launcher 的开发者及发行方无隶属、授权或合作关系。旧版本曾出现下载页面无响应、任务管理界面异常、并行安装冲突以及下载末段速度显示偏低等问题；1.0.0.1 修复和优化了任务管理及并发安装流程，末段速度偏低问题仍需结合实际下载任务观察。PCLU 不是 Minecraft 官方产品，亦未获 Mojang 或 Microsoft 批准或与其关联。" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,0,0,2" LineHeight="17" Text="PCLU（Plain Craft Launcher Ultra，PCL 旗舰版）是个人开发者独立维护的第三方修改版，基于 PCL 公开代码并按其分发许可使用。PCLU 与 PCL 原作者及发行方没有隶属、授权、合作或官方背书关系；PCLU 的功能、发行、更新与支持由 PCLU 维护者负责。PCL 名称与相关权利归各自权利人所有。PCLU 不是 Minecraft 官方产品，也未获 Mojang 或 Microsoft 批准或与其关联。" TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal" Height="35" HorizontalAlignment="Left" Margin="0,12,0,0">
                         <local:MyButton Text="用户协议与免责声明" Width="170" Padding="13,0" Margin="0,0,20,0" ColorType="Highlight" 
                                         local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://shimo.im/docs/rGrd8pY8xWkt6ryW#anchor-RnU9" />

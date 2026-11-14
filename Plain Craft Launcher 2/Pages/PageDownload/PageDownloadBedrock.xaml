@@ -1,0 +1,33 @@
+<local:MyPageRight
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:PCL"
+    x:Class="PageDownloadBedrock"
+    PanScroll="PanBack">
+    <local:MyScrollViewer x:Name="PanBack" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="25,10,25,25">
+            <local:MyHint Margin="0,0,0,15" Theme="Blue" Text="基岩版 Windows 由 Microsoft Store 安装并验证授权。PCLU 提供官方入口，不下载或复制商店保护的游戏文件。" />
+            <local:MyCard Title="Minecraft for Windows" Margin="0,0,0,15">
+                <StackPanel Margin="20,40,20,18">
+                    <TextBlock Text="正式版" FontSize="15" />
+                    <TextBlock Text="安装、更新和账号授权由 Microsoft Store 管理。安装后从 Windows 开始菜单或 Xbox 应用启动。" Foreground="{DynamicResource ColorBrushGray2}" Margin="0,6,0,14" TextWrapping="Wrap" />
+                    <local:MyButton x:Name="BtnOpenBedrockStore" Text="安装 / 打开 Microsoft Store" Width="220" Height="35" Click="OpenBedrockStore_Click" />
+                </StackPanel>
+            </local:MyCard>
+            <local:MyCard Title="Minecraft Preview" Margin="0,0,0,15">
+                <StackPanel Margin="20,40,20,18">
+                    <TextBlock Text="预览版" FontSize="15" />
+                    <TextBlock Text="预览版由 Microsoft 官方单独分发，是否可安装取决于账号资格和所在地区；它与正式版是不同的应用。" Foreground="{DynamicResource ColorBrushGray2}" Margin="0,6,0,14" TextWrapping="Wrap" />
+                    <local:MyButton Text="查看官方 Preview 说明" Width="210" Height="35"
+                                    local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://www.minecraft.net/en-us/about-minecraft-preview" />
+                </StackPanel>
+            </local:MyCard>
+            <local:MyCard Title="实例与设置" Margin="0,0,0,15">
+                <StackPanel Margin="20,40,20,18">
+                    <TextBlock Text="基岩版不是 Java 版实例" FontSize="15" />
+                    <TextBlock Text="商店版安装在 Windows 应用包环境中，PCLU 的 Java 版本列表、Java 路径、内存和版本隔离设置不适用于基岩版。商店版数据位置由 Windows 和游戏管理，不会写入 .minecraft\versions，也不能作为可移植目录放入 bedrockversion 后独立启动。" Foreground="{DynamicResource ColorBrushGray2}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </local:MyCard>
+        </StackPanel>
+    </local:MyScrollViewer>
+</local:MyPageRight>

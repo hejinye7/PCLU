@@ -11,6 +11,13 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 449 Then 'Release 1.0.1
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：游戏安装完成后自动选择新实例，并刷新启动页版本状态"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：并发下载重试时速度读数偏低；改用实际网络字节和近 1 秒统计窗口"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：社区资源加入基岩版官方商店与 Preview 安装入口"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "说明：基岩版安装和授权由 Microsoft Store 管理，与 Java 版实例及设置分开"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "补充：关于页列出上游项目、第三方组件鸣谢及 PCLU 与 PCL 的关系"))
+            End If
             If LastVersion < 447 Then 'Release 1.0.0.8
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：新功能投票和提案入口统一使用 PCLU Discussions 的 Ideas 分类"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "修复：主题包下载改为从 PCLU 仓库获取"))
@@ -163,6 +170,13 @@ Public Class FormMain
                 BugCount += 21
             End If
         Else
+            If LastVersion < 450 Then 'Snapshot 1.0.1
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：游戏安装完成后自动选择新实例，并刷新启动页版本状态"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：并发下载重试时速度读数偏低；改用实际网络字节和近 1 秒统计窗口"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：社区资源加入基岩版官方商店与 Preview 安装入口"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "说明：基岩版安装和授权由 Microsoft Store 管理，与 Java 版实例及设置分开"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "补充：关于页列出上游项目、第三方组件鸣谢及 PCLU 与 PCL 的关系"))
+            End If
             If LastVersion < 446 Then 'Snapshot 1.0.0.7
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：LabyMod 等大型实例的单实例 BAT 参数过长，导出后无法启动"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：U 盘导出显示真实文件复制进度和阶段"))
@@ -1409,6 +1423,7 @@ Public Class FormMain
         DownloadShader = 6
         DownloadCommunityClient = 7
         DownloadFavorite = 8
+        DownloadBedrock = 9
         SetupLaunch = 0
         SetupLink = 1
         SetupUI = 2

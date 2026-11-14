@@ -1212,6 +1212,7 @@ NotSupportRange:
                             Task.FailCount = 0
                         Next
                         Interlocked.Add(NetManager.DownloadDone, RealDataCount)
+                        NetManager.RecordDownloadBytes(RealDataCount)
                         Interlocked.Add(DownloadDone, RealDataCount)
                         Th.DownloadDone += RealDataCount
                         ResultStream.Write(ResponseBytes, 0, RealDataCount)
@@ -1864,6 +1865,18 @@ FinishExCatch:
         ''' </summary>
         Public DownloadDone As Long = 0
 
+        Private DownloadBytesReceivedValue As Long = 0
+
+        Public ReadOnly Property DownloadBytesReceived As Long
+            Get
+                Return Interlocked.Read(DownloadBytesReceivedValue)
+            End Get
+        End Property
+
+        Public Sub RecordDownloadBytes(ByteCount As Integer)
+            Interlocked.Add(DownloadBytesReceivedValue, ByteCount)
+        End Sub
+
         ''' <summary>
         ''' 尚未完成下载的文件数。
         ''' </summary>
@@ -1875,6 +1888,9 @@ FinishExCatch:
         ''' </summary>
         Public Speed As Long = 0
 
+        Private ReadOnly SpeedSamples As New Queue(Of KeyValuePair(Of Long, Long))
+        Private SpeedLastBytes As Long = 0
+
         Public ReadOnly Uuid As Integer = GetUuid()
 
 #End Region
@@ -1884,31 +1900,36 @@ FinishExCatch:
         ''' </summary>
         Private Sub RefreshStat()
             Try
-                Dim DeltaTime As Long = GetTimeMs() - RefreshStatLast
-                If DeltaTime = 0 Then Return
-                RefreshStatLast += DeltaTime
+                Dim CurrentTime As Long = GetTimeMs()
+                If RefreshStatLast = 0 Then
+                    RefreshStatLast = CurrentTime
+                    SpeedLastBytes = DownloadBytesReceived
+                End If
+                Dim DeltaTime As Long = CurrentTime - RefreshStatLast
+                If DeltaTime <= 0 Then Return
+                RefreshStatLast = CurrentTime
 #Region "刷新整体速度"
-                '计算瞬时速度
-                Static SpeedLast As New List(Of Long) '记录至多最近 30 次下载速度的记录，较新的在前面
-                Static SpeedLastDone As Long = 0 '上次记速时的已下载大小
-                Dim ActualSpeed As Double = Math.Max(0, (DownloadDone - SpeedLastDone) / (DeltaTime / 1000))
-                SpeedLast.Insert(0, ActualSpeed)
-                If SpeedLast.Count >= 31 Then SpeedLast.RemoveAt(30)
-                SpeedLastDone = DownloadDone
-                '计算用于显示的速度
-                Dim SpeedSum As Long = 0, SpeedDiv As Long = 0, Weight = SpeedLast.Count
-                For Each SpeedRecord In SpeedLast
-                    SpeedSum += SpeedRecord * Weight
-                    SpeedDiv += Weight
-                    Weight -= 1
-                Next
-                Speed = If(SpeedDiv > 0, SpeedSum / SpeedDiv, 0)
-                '计算新的速度下限
-                Dim Limit As Long = 0
-                If SpeedLast.Count >= 10 Then Limit = SpeedLast.Take(10).Average * 0.85 '取近 1 秒的平均速度的 85%
-                If Limit > NetTaskSpeedLimitLow Then
-                    NetTaskSpeedLimitLow = Limit
-                    Logger.Info($"速度下限已提升到 {StringUtils.FormatByteSize(Limit)}")
+                Dim CurrentBytes As Long = DownloadBytesReceived
+                If FileRemain <= 0 Then
+                    SpeedSamples.Clear()
+                    Speed = 0
+                    SpeedLastBytes = CurrentBytes
+                Else
+                    Dim DeltaBytes As Long = Math.Max(0, CurrentBytes - SpeedLastBytes)
+                    SpeedSamples.Enqueue(New KeyValuePair(Of Long, Long)(DeltaBytes, DeltaTime))
+                    While SpeedSamples.Count > 10
+                        SpeedSamples.Dequeue()
+                    End While
+                    SpeedLastBytes = CurrentBytes
+                    Dim WindowBytes As Long = SpeedSamples.Sum(Function(Sample) Sample.Key)
+                    Dim WindowTime As Long = SpeedSamples.Sum(Function(Sample) Sample.Value)
+                    Speed = If(WindowTime > 0, CLng(WindowBytes * 1000.0 / WindowTime), 0)
+
+                    Dim Limit As Long = CLng(Speed * 0.85)
+                    If Limit > NetTaskSpeedLimitLow Then
+                        NetTaskSpeedLimitLow = Limit
+                        Logger.Info($"速度下限已提升到 {StringUtils.FormatByteSize(Limit)}")
+                    End If
                 End If
 #End Region
 #Region "刷新下载任务属性"
@@ -1920,7 +1941,7 @@ FinishExCatch:
                 Logger.Warn(ex, "刷新下载公开属性失败")
             End Try
         End Sub
-        Private RefreshStatLast As Long
+        Private RefreshStatLast As Long = 0
 
         ''' <summary>
         ''' 启动监控线程，用于新增下载线程。

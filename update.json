@@ -2,9 +2,9 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.0.8",
-  "versionCode": 447,
-  "releaseNotes": "PCLU 1.0.0.8：新功能投票和提案入口改为 PCLU Discussions 的 Ideas 分类；修复主题包下载地址及 LabyMod 选择卡顿；更新线路使用 PCLU 仓库，并保留上游及第三方项目链接。",
+  "version": "1.0.1",
+  "versionCode": 449,
+  "releaseNotes": "PCLU 1.0.1：修复安装后未自动选中新实例及并发重试时下载速度偏低；社区资源新增基岩版官方安装入口。",
   "downloadUrl": "https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",
   "downloadUrls": [
     "https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",

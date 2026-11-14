@@ -2,11 +2,13 @@
 
 PCLU 的中文名为 **PCL 旗舰版**，是个人开发者维护的 Plain Craft Launcher 第三方修改版。
 
-PCLU 与原版 Plain Craft Launcher 的开发者及发行方无隶属、授权或合作关系。旧版本曾出现下载页面无响应、任务管理界面异常、并行安装冲突以及下载末段速度显示偏低等问题；1.0.0.1 修复和优化了下载任务管理及并发安装流程，末段速度偏低问题仍需结合实际下载任务观察。PCLU 不是 Minecraft 官方产品，亦未获 Mojang 或 Microsoft 批准或与其关联。
+PCLU 基于 PCL 公开代码并按其分发许可制作，是由个人独立维护的第三方修改版。PCLU 与 PCL 原作者及发行方没有隶属、授权、合作或官方背书关系；PCLU 的功能、发行、更新与支持由 PCLU 维护者负责。PCL 名称及相关权利归各自权利人所有。PCLU 不是 Minecraft 官方产品，亦未获 Mojang 或 Microsoft 批准或与其关联。
+
+1.0.1 修复了游戏实例安装完成后启动页仍停留在旧版本或加载状态的问题，并调整下载速度统计，避免并发重试时低估速度。下载页增加 Minecraft for Windows 与 Minecraft Preview 的官方安装入口。基岩版 Windows 安装、更新和授权由 Microsoft Store 管理；PCLU 不提供商店游戏文件的独立下载，也不把它伪装成 Java 版实例。
 
 项目维护：个人开发者（署名及鸣谢见启动器“关于与鸣谢”页面）。
 
-感谢龙腾猫跃、HerobrineXia、BMCLAPI、MC 百科、EasyTier 以及所有 PCL 社区贡献者。
+感谢龙腾猫跃、HerobrineXia、BMCLAPI、MC 百科、EasyTier、Newtonsoft.Json、Ookii.Dialogs.Wpf、Fabric、Forge、NeoForge、Modrinth、LabyMod、Eclipse Temurin、重庆大学开源软件镜像站以及所有 PCL 社区贡献者。各项目和服务的权利与许可归其所有者所有。
 
 更新清单：国际网络优先使用 GitHub，国内网络自动回退到 jsDelivr 与 gh-proxy。
 

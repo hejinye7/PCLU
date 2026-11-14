@@ -288,6 +288,9 @@
     <Compile Include="Pages\PageDownload\PageDownloadCommunityClient.xaml.vb">
       <DependentUpon>PageDownloadCommunityClient.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Pages\PageDownload\PageDownloadBedrock.xaml.vb">
+      <DependentUpon>PageDownloadBedrock.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Pages\PageDownload\PageDownloadFavorites.xaml.vb">
       <DependentUpon>PageDownloadFavorites.xaml</DependentUpon>
     </Compile>
@@ -542,6 +545,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Pages\PageDownload\PageDownloadCommunityClient.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Pages\PageDownload\PageDownloadBedrock.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
