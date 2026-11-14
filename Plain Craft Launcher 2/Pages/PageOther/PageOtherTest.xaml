@@ -71,6 +71,7 @@
                         <TextBlock x:Name="LabUsbStatus" VerticalAlignment="Center" Opacity="0.55" Text="请选择目标 U 盘。" TextWrapping="Wrap" />
                         <local:MyButton x:Name="BtnUsbExport" Grid.Column="1" MinWidth="150" Height="35" Text="开始安装到 U 盘" IsEnabled="False" />
                     </Grid>
+                    <ProgressBar x:Name="ProgressUsbExport" Margin="0,8,0,0" Height="6" Minimum="0" Maximum="100" Value="0" Visibility="Collapsed" Foreground="{DynamicResource ColorBrush3}" Background="{DynamicResource ColorBrush6}" BorderThickness="0" />
                 </StackPanel>
             </local:MyCard>
         </StackPanel>

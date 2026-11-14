@@ -11,6 +11,11 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 445 Then 'Release 1.0.0.7
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：LabyMod 等大型实例的单实例 BAT 参数过长，导出后无法启动"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：U 盘导出显示真实文件复制进度和阶段"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "修复：反馈入口指向未启用的 Issues 页面"))
+            End If
             If LastVersion < 441 Then 'Release 1.0.0.5
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：反馈打开网页或日志文件夹时阻塞启动器，外部程序改为后台启动"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：启动页可直接切换到 LittleSkin 第三方登录"))
@@ -153,6 +158,11 @@ Public Class FormMain
                 BugCount += 21
             End If
         Else
+            If LastVersion < 446 Then 'Snapshot 1.0.0.7
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：LabyMod 等大型实例的单实例 BAT 参数过长，导出后无法启动"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：U 盘导出显示真实文件复制进度和阶段"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "修复：反馈入口指向未启用的 Issues 页面"))
+            End If
             If LastVersion < 442 Then 'Snapshot 1.0.0.5
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：反馈打开网页或日志文件夹时阻塞启动器，外部程序改为后台启动"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：启动页可直接切换到 LittleSkin 第三方登录"))
@@ -740,7 +750,7 @@ Public Class FormMain
         If ReturnCode = ProcessReturnValues.Exception Then
             If Not IsLogShown Then
                 FeedbackInfo()
-                Logger.Info("请在 https://github.com/hejinye7/PCLlife/issues 提交 PCLU 错误报告，以便于项目维护者解决此问题！")
+                Logger.Info("PCLU 项目主页：https://github.com/hejinye7/PCLlife（仓库尚未启用 Issues，暂时无法在线提交错误报告）")
                 IsLogShown = True
                 StartProcess(Paths.Base & "PCL\Log1.txt")
             End If

@@ -2,9 +2,9 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.0.6",
-  "versionCode": 443,
-  "releaseNotes": "PCLU 1.0.0.6：修复第三方登录认证服务器地址加载和登录方式切换；U 盘安装自动扫描实例并修复跨线程异常；主页默认显示本机实测启动耗时记录；优化反馈响应和 WebDAV 按钮尺寸。",
+  "version": "1.0.0.7",
+  "versionCode": 445,
+  "releaseNotes": "PCLU 1.0.0.7：修复 LabyMod 等大型实例导出的单实例 BAT 因启动参数过长而无法运行；U 盘导出显示按实际复制字节计算的进度；反馈入口不再跳转到未启用的 GitHub Issues 页面。",
   "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
   "downloadUrls": [
     "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",

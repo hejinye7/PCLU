@@ -20,6 +20,7 @@ Public Class PageOtherTest
     Private UsbInitialized As Boolean = False
     Private UsbScanStarted As Boolean = False
     Private UsbScannedFolder As String = ""
+    Private Shared PortableLastUiUpdate As Date = Date.MinValue
 
     Private Sub PageOtherTest_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         PanBack.ScrollToHome()
@@ -153,6 +154,8 @@ Public Class PageOtherTest
         End If
         BtnUsbExport.IsEnabled = False
         BtnUsbSelect.IsEnabled = False
+        ProgressUsbExport.Value = 0
+        ProgressUsbExport.Visibility = Visibility.Visible
         RunInNewThread(
         Sub()
             Try
@@ -165,6 +168,7 @@ Public Class PageOtherTest
                 RunInUi(Sub()
                             BtnUsbSelect.IsEnabled = True
                             UpdateUsbExportState()
+                            ProgressUsbExport.Visibility = Visibility.Collapsed
                         End Sub)
             End Try
         End Sub, "U 盘便携安装", ThreadPriority.BelowNormal)
@@ -175,6 +179,55 @@ Public Class PageOtherTest
         RunInUi(Sub()
                     If FrmMain?.PageRight IsNot Nothing AndAlso TypeOf FrmMain.PageRight Is PageOtherTest Then
                         CType(FrmMain.PageRight, PageOtherTest).LabUsbStatus.Text = Text
+                    End If
+                End Sub)
+    End Sub
+
+    Private Shared Function GetTreeFiles(Folder As String) As List(Of FileInfo)
+        If String.IsNullOrWhiteSpace(Folder) OrElse Not Directory.Exists(Folder) Then Return New List(Of FileInfo)
+        Return Directory.GetFiles(Folder, "*", SearchOption.AllDirectories).Select(Function(File) New FileInfo(File)).ToList()
+    End Function
+
+    Private Shared Function TreeSize(Files As IEnumerable(Of FileInfo)) As Long
+        Return Files.Sum(Function(File) File.Length)
+    End Function
+
+    Private Shared Sub CopyFilesWithProgress(Files As IEnumerable(Of FileInfo), SourceRoot As String, TargetRoot As String,
+                                             ByRef CompletedBytes As Long, TotalBytes As Long, Stage As String)
+        Dim Buffer(1024 * 1024 - 1) As Byte
+        For Each Source In Files
+            Dim RelativePath = Source.FullName.Substring(SourceRoot.TrimEnd("\"c).Length).TrimStart("\"c)
+            Dim Target = Path.Combine(TargetRoot, RelativePath)
+            DirectoryUtils.Create(Path.GetDirectoryName(Target))
+            Using Input As New FileStream(Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read)
+                Using Output As New FileStream(Target, FileMode.Create, FileAccess.Write, FileShare.None)
+                    Dim Read As Integer
+                    Do
+                        Read = Input.Read(Buffer, 0, Buffer.Length)
+                        If Read <= 0 Then Exit Do
+                        Output.Write(Buffer, 0, Read)
+                        CompletedBytes += Read
+                        If Date.Now.Subtract(PortableLastUiUpdate).TotalMilliseconds >= 100 OrElse CompletedBytes >= TotalBytes Then
+                            PortableLastUiUpdate = Date.Now
+                            PortableProgress(CompletedBytes, TotalBytes, Stage)
+                        End If
+                    Loop
+                End Using
+            End Using
+            File.SetLastWriteTimeUtc(Target, Source.LastWriteTimeUtc)
+            File.SetAttributes(Target, Source.Attributes And Not FileAttributes.ReadOnly)
+            If Source.Length = 0 Then PortableProgress(CompletedBytes, TotalBytes, Stage)
+        Next
+    End Sub
+
+    Private Shared Sub PortableProgress(CompletedBytes As Long, TotalBytes As Long, Stage As String)
+        Dim Percent = If(TotalBytes <= 0, 100, Math.Min(100, CompletedBytes * 100.0 / TotalBytes))
+        RunInUi(Sub()
+                    If FrmMain?.PageRight IsNot Nothing AndAlso TypeOf FrmMain.PageRight Is PageOtherTest Then
+                        Dim Page = CType(FrmMain.PageRight, PageOtherTest)
+                        Page.ProgressUsbExport.Value = Percent
+                        Page.ProgressUsbExport.Visibility = Visibility.Visible
+                        Page.LabUsbStatus.Text = $"{Stage}  {Percent:0}%"
                     End If
                 End Sub)
     End Sub
@@ -226,21 +279,27 @@ Public Class PageOtherTest
     Private Sub PortableExport(Target As String, Instances As List(Of McInstance), SingleBatch As Boolean, LegacyName As String)
         Dim SourceMc = PathUtils.AddSlashSuffix(McFolderSelected)
         Dim TargetMc = Path.Combine(Target, ".minecraft") & "\"
+        Dim McFiles = GetTreeFiles(SourceMc)
+        Dim PclFiles = GetTreeFiles(PathPure.Value)
+        Dim JavaToCopy = McLaunchJavaSelected
+        If JavaToCopy Is Nothing Then JavaToCopy = Configs.JavaList.Get().FirstOrDefault()
+        Dim JavaFiles As List(Of FileInfo) = If(JavaToCopy IsNot Nothing AndAlso Directory.Exists(JavaToCopy.Folder), GetTreeFiles(JavaToCopy.Folder), New List(Of FileInfo))
+        Dim TotalBytes = TreeSize(McFiles) + TreeSize(PclFiles) + TreeSize(JavaFiles)
+        Dim CompletedBytes As Long = 0
+        PortableLastUiUpdate = Date.MinValue
         PortableStatus("正在复制 Minecraft 文件和共享资源……")
         If Directory.Exists(TargetMc) Then DirectoryUtils.Delete(TargetMc)
-        DirectoryUtils.Copy(SourceMc, TargetMc)
+        CopyFilesWithProgress(McFiles, SourceMc, TargetMc, CompletedBytes, TotalBytes, "复制 Minecraft 文件")
         RemoveUnselectedVersions(TargetMc, VersionDependencies(SourceMc, Instances))
         WriteIni(TargetMc & "PCL.ini", "Version", Instances.First().Name)
         WriteIni(TargetMc & "PCL.ini", "InstanceCache", "")
         PortableStatus("正在复制启动器文件……")
-        DirectoryUtils.Copy(PathPure.Value, Path.Combine(Target, "PCL") & "\")
-        Dim JavaToCopy = McLaunchJavaSelected
-        If JavaToCopy Is Nothing Then JavaToCopy = Configs.JavaList.Get().FirstOrDefault()
+        CopyFilesWithProgress(PclFiles, PathPure.Value, Path.Combine(Target, "PCL"), CompletedBytes, TotalBytes, "复制启动器文件")
+        Dim InitialJavaPath = If(JavaToCopy Is Nothing, "", JavaToCopy.Folder)
         If JavaToCopy IsNot Nothing AndAlso Directory.Exists(JavaToCopy.Folder) Then
-            PortableStatus("正在复制 Java 运行时……")
             Dim JavaTarget = Path.Combine(Target, "java") & "\"
             If Directory.Exists(JavaTarget) Then DirectoryUtils.Delete(JavaTarget)
-            DirectoryUtils.Copy(JavaToCopy.Folder, JavaTarget)
+            CopyFilesWithProgress(JavaFiles, JavaToCopy.Folder, JavaTarget, CompletedBytes, TotalBytes, "复制 Java 运行时")
         End If
         If Not SingleBatch Then
             WritePortableLauncher(Target, LegacyName, JavaToCopy IsNot Nothing AndAlso Directory.Exists(JavaToCopy.Folder))
@@ -251,8 +310,9 @@ Public Class PageOtherTest
 
         Dim TempFolder = RequestTaskTempFolder()
         Dim TempBat = Path.Combine(TempFolder, "portable-launch.bat")
+        Dim TempArguments = Path.Combine(TempFolder, "portable-launch.args")
         Dim Started As Boolean = False
-        RunInUiWait(Sub() Started = McLaunchStart(New McLaunchOptions With {.SaveBatch = TempBat, .Instance = Instances.First()}))
+        RunInUiWait(Sub() Started = McLaunchStart(New McLaunchOptions With {.SaveBatch = TempBat, .SaveBatchArguments = TempArguments, .Instance = Instances.First()}))
         If Not Started Then Throw New Exception("启动参数生成失败，请先确认该实例可以正常启动。")
         Dim WaitStart = Date.Now
         Do While McLaunchLoader.State = LoadState.Loading
@@ -260,22 +320,62 @@ Public Class PageOtherTest
             Thread.Sleep(100)
         Loop
         If Not FileUtils.Exists(TempBat) Then Throw New FileNotFoundException("没有生成启动脚本")
-        PortableStatus("正在整理 Java 运行时和相对路径……")
+        PortableStatus("正在生成便携启动脚本……")
         If McLaunchJavaSelected Is Nothing Then Throw New Exception("没有找到可用的 Java")
         Dim JavaTargetBatch = Path.Combine(Target, "java") & "\"
-        If Directory.Exists(JavaTargetBatch) Then DirectoryUtils.Delete(JavaTargetBatch)
-        DirectoryUtils.Copy(McLaunchJavaSelected.Folder, JavaTargetBatch)
-        Dim Content = File.ReadAllText(TempBat, Encoding.Default)
-        Content = PortablePath(Content, SourceMc, PathPure.Value)
-        Dim JavaExe = McLaunchJavaSelected.JavaExePath
-        Content = Content.Replace(JavaExe, "%~dp0java\bin\java.exe")
+        Dim JavaBatchFiles = GetTreeFiles(McLaunchJavaSelected.Folder)
+        If String.IsNullOrWhiteSpace(InitialJavaPath) OrElse Not PathUtils.IsSame(InitialJavaPath, McLaunchJavaSelected.Folder) Then
+            If Directory.Exists(JavaTargetBatch) Then DirectoryUtils.Delete(JavaTargetBatch)
+            TotalBytes += TreeSize(JavaBatchFiles)
+            CopyFilesWithProgress(JavaBatchFiles, McLaunchJavaSelected.Folder, JavaTargetBatch, CompletedBytes, TotalBytes, "复制 Java 运行时")
+        End If
+        Dim SafeName = Instances.First().Name
+        Dim BatchPath = Path.Combine(Target, "启动 " & SafeName & ".bat")
+        If McLaunchJavaSelected.Version.Major < 9 Then
+            Dim Content = File.ReadAllText(TempBat, Encoding.Default)
+            Content = PortablePath(Content, SourceMc, PathPure.Value)
+            Content = Content.Replace(McLaunchJavaSelected.JavaExePath, "%~dp0java\bin\java.exe")
+            If Settings.Get(Of McLoginType)("LoginType") = McLoginType.Legacy AndAlso McLoginLoader.Output.AccessToken <> "" Then
+                Dim Masked = FilterAccessToken(McLoginLoader.Output.AccessToken, "F"c)
+                Content = Content.Replace(Masked, McLoginLoader.Output.AccessToken)
+            End If
+            Dim BatPath = Path.Combine(Target, "启动 " & SafeName & ".bat")
+            FileUtils.Write(BatPath, Content, Encoding.Default)
+            DirectoryUtils.Delete(TempFolder)
+            PortableProgress(TotalBytes, TotalBytes, "导出完成")
+            PortableStatus("单实例启动 BAT 已完成，可在 U 盘根目录运行。")
+            Hint("U 盘单实例启动 BAT 导出完成！", HintType.Green)
+            Return
+        End If
+        Dim ArgumentContent = File.ReadAllText(TempArguments, Encoding.UTF8)
+        ArgumentContent = PortablePath(ArgumentContent, SourceMc, PathPure.Value)
         If Settings.Get(Of McLoginType)("LoginType") = McLoginType.Legacy AndAlso McLoginLoader.Output.AccessToken <> "" Then
             Dim Masked = FilterAccessToken(McLoginLoader.Output.AccessToken, "F"c)
-            Content = Content.Replace(Masked, McLoginLoader.Output.AccessToken)
+            ArgumentContent = ArgumentContent.Replace(Masked, McLoginLoader.Output.AccessToken)
         End If
-        Dim BatchPath = Path.Combine(Target, "启动 " & Instances.First().Name & ".bat")
-        FileUtils.Write(filePath:=BatchPath, text:=Content, encoding:=Encoding.Default)
+        Dim ArgumentPath = Path.Combine(Target, "启动 " & SafeName & ".args")
+        Dim ScriptPath = Path.Combine(Target, "启动 " & SafeName & ".ps1")
+        Dim SafeScriptName = SafeName.Replace("'", "''")
+        FileUtils.Write(ArgumentPath, ArgumentContent, New UTF8Encoding(False))
+        Dim Script = "$ErrorActionPreference = 'Stop'" & vbCrLf &
+                     "$root = $PSScriptRoot.TrimEnd('\') + '\'" & vbCrLf &
+                     "$text = [IO.File]::ReadAllText((Join-Path $PSScriptRoot '启动 " & SafeScriptName & ".args'), [Text.Encoding]::UTF8)" & vbCrLf &
+                     "$text = $text.Replace('%~dp0', $root)" & vbCrLf &
+                     "$argFile = Join-Path $env:TEMP ('pclu-' + [Guid]::NewGuid().ToString('N') + '.args')" & vbCrLf &
+                     "try {" & vbCrLf &
+                     "  [IO.File]::WriteAllText($argFile, $text, [Text.UTF8Encoding]::new($false))" & vbCrLf &
+                     "  & (Join-Path $PSScriptRoot 'java\bin\java.exe') ('@' + $argFile)" & vbCrLf &
+                     "  exit $LASTEXITCODE" & vbCrLf &
+                     "} finally { Remove-Item -LiteralPath $argFile -Force -ErrorAction SilentlyContinue }" & vbCrLf
+        FileUtils.Write(ScriptPath, Script, Encoding.UTF8)
+        Dim BatchLines = File.ReadAllText(TempBat, Encoding.Default).Split({vbCrLf}, StringSplitOptions.None)
+        Dim JavaLineIndex = Array.FindIndex(BatchLines, Function(Line) Line.TrimStart().StartsWith("""" & McLaunchJavaSelected.JavaExePath & """", StringComparison.OrdinalIgnoreCase))
+        If JavaLineIndex < 0 Then Throw New Exception("无法在启动脚本中定位 Java 命令行。")
+        BatchLines(JavaLineIndex) = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""%~dp0启动 " & SafeName & ".ps1"""
+        Dim PortableBatch = PortablePath(String.Join(vbCrLf, BatchLines), SourceMc, PathPure.Value)
+        FileUtils.Write(BatchPath, PortableBatch, Encoding.Default)
         DirectoryUtils.Delete(TempFolder)
+        PortableProgress(TotalBytes, TotalBytes, "导出完成")
         PortableStatus("单实例启动 BAT 已完成，可在 U 盘根目录运行。")
         Hint("U 盘单实例启动 BAT 导出完成！", HintType.Green)
     End Sub

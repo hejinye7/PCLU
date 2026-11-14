@@ -20,6 +20,10 @@ Public Module ModLaunch
         ''' </summary>
         Public SaveBatch As String = Nothing
         ''' <summary>
+        ''' 可选的 Java 参数文件输出路径，用于便携 BAT 避免 CMD 单行长度限制。
+        ''' </summary>
+        Public SaveBatchArguments As String = Nothing
+        ''' <summary>
         ''' 强行指定启动的 MC 版本。
         ''' 默认值：Nothing。使用 McInstanceCurrent。
         ''' </summary>
@@ -2031,6 +2035,9 @@ IgnoreCustomSkin:
                 $"""{McLaunchJavaSelected.JavaExePath}"" {McLaunchArgument}" & vbCrLf &
                 "echo 游戏已退出。" & vbCrLf &
                 "pause"
+            If CurrentLaunchOptions.SaveBatchArguments IsNot Nothing Then
+                FileUtils.Write(CurrentLaunchOptions.SaveBatchArguments, FilterAccessToken(McLaunchArgument, "F"c), Encoding.UTF8)
+            End If
             FileUtils.Write(
                 filePath:=If(CurrentLaunchOptions.SaveBatch, Paths.Base & "PCL\LatestLaunch.bat"),
                 text:=FilterAccessToken(CmdString, "F").Replace("%", "%%"),

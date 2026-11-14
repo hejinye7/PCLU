@@ -266,7 +266,7 @@
         <TextBlock TextWrapping="Wrap" Margin="0,0,0,10"
                     Text="如果你在尝试制作联网更新的主页，可以通过 PCLU 项目页面联系维护者。&#xa;你可以为主页添加版本号检查以节省流量，也可以通过检查 Referer 和 User Agent 来确定启动器版本。" />
         <local:MyButton Margin="0,0,0,8" Height="35" HorizontalAlignment="Center" Padding="20,0,20,0"
-                    Text="打开 PCLU 项目页面" EventType="打开网页" EventData="https://github.com/hejinye7/PCLlife/issues" />
+                    Text="打开 PCLU 项目页面" EventType="打开网页" EventData="https://github.com/hejinye7/PCLlife" />
     </StackPanel>
 </local:MyCard>
 

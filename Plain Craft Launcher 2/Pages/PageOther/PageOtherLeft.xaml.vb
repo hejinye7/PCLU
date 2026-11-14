@@ -131,12 +131,10 @@ Public Class PageOtherLeft
         e.Handled = True
     End Sub
     Public Shared Sub TryFeedback()
-        Select Case MyMsgBox("在提交新反馈前，建议先搜索反馈列表，以避免重复提交。" & vbCrLf & "如果无法打开该网页，请使用 VPN 改善网络环境。",
-                    "反馈", "提交新反馈", "查看反馈列表", "取消")
+        Select Case MyMsgBox("PCLU 项目仓库目前未开放 Issues。你可以打开项目主页查看项目状态；启用 Issues 后才能在线提交反馈。",
+                    "反馈", "打开项目主页", "取消")
             Case 1
                 Feedback(True, False)
-            Case 2
-                OpenWebsite("https://github.com/hejinye7/PCLlife/issues")
         End Select
     End Sub
     Private Sub TryVote(sender As Object, e As RouteEventArgs) Handles ItemVote.Changed
@@ -147,7 +145,7 @@ Public Class PageOtherLeft
     Public Shared Sub TryVote()
         If MyMsgBox("是否打开 PCLU 项目页面查看或提交功能建议？",
                     "新功能投票", "打开", "取消") = 2 Then Return
-        OpenWebsite("https://github.com/hejinye7/PCLlife/issues")
+        OpenWebsite("https://github.com/hejinye7/PCLlife")
     End Sub
 
 End Class
