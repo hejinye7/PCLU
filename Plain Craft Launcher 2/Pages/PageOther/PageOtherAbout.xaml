@@ -46,7 +46,7 @@
                     <local:MyButton Text="赞助原作者" Grid.Column="2" Grid.Row="1" Height="35" ColorType="Highlight"
                                     local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://meloong.com/afd/a/LTCat" />
                     <local:MyButton Text="项目主页" Grid.Column="2" Grid.Row="2" Height="35"
-                                    local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://github.com/hejinye7/PCLlife" />
+                                    local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://github.com/hejinye7/PCLU" />
                     <local:MyButton Text="检查更新" Grid.Column="2" Grid.Row="3" Height="35" 
                                     x:Name="BtnAboutUpdate" />
                 </Grid>
@@ -1438,7 +1438,7 @@
             <local:MyCard Margin="0,0,0,15" Title="法律信息" IsSwapped="True" CanSwap="True">
                 <StackPanel Margin="25,39,23,20">
                     <TextBlock Text="匿名数据收集" TextWrapping="Wrap" Margin="0,6,0,4" FontWeight="Bold" />
-                    <TextBlock Margin="0,0,0,2" LineHeight="17" Text="当下载失败、PCLU 出错或游戏异常时，启动器可能匿名上报诊断信息；你可以在 设置 → 其他 → 启动器 中关闭上报。&#xa;PCLU 项目主页：https://github.com/hejinye7/PCLlife（当前仓库尚未启用 Issues 与 Discussions）。" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,0,0,2" LineHeight="17" Text="当下载失败、PCL 出错、游戏崩溃等事件时，PCL 会匿名上报信息，以通知龙猫 “哦吼，出错了”，让龙猫能更好地修 Bug……（PCL 不会上传或收集任何个人信息，包括上报的东西里面也没有！）&#xa;你可以在 设置 → 其他 → 启动器 中关闭上报，不过龙猫就不知道你遇到了什么 Bug 了……&#xa;详情：https://github.com/Meloong-Git/PCL/discussions/7036" TextWrapping="Wrap" />
                     <TextBlock Text="隐私声明与个人信息保护政策" TextWrapping="Wrap" Margin="0,10,0,4" FontWeight="Bold" />
                     <TextBlock Margin="0,0,0,2" LineHeight="17" Text="PCL 没有收集个人信息，所以这里其实啥都不用写……&#xa;留个这个其实只是为了让你知道 PCL 没有收集个人信息，诶嘿。" TextWrapping="Wrap" />
                     <TextBlock Text="PCLU 项目说明" TextWrapping="Wrap" Margin="0,10,0,4" FontWeight="Bold" />
@@ -1448,7 +1448,7 @@
                                         local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://shimo.im/docs/rGrd8pY8xWkt6ryW#anchor-RnU9" />
                         <local:MyButton Text="PCL 分发有限许可" Width="170" Padding="13,0" Margin="0,0,20,0" 
                                         local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://shimo.im/docs/rGrd8pY8xWkt6ryW#anchor-X0bo" />
-                        <local:MyButton Text="开源代码" Width="140" Padding="13,0" local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://github.com/hejinye7/PCLlife" />
+                        <local:MyButton Text="开源代码" Width="140" Padding="13,0" local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://github.com/hejinye7/PCLU" />
                     </StackPanel>
                 </StackPanel>
             </local:MyCard>

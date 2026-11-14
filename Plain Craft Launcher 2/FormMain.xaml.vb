@@ -11,6 +11,11 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 447 Then 'Release 1.0.0.8
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：新功能投票和提案入口统一使用 PCLU Discussions 的 Ideas 分类"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "修复：主题包下载改为从 PCLU 仓库获取"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "优化：选择 LabyMod 时跳过无关加载器扫描；不支持的 Minecraft 版本会显示官方可用版本"))
+            End If
             If LastVersion < 445 Then 'Release 1.0.0.7
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：LabyMod 等大型实例的单实例 BAT 参数过长，导出后无法启动"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：U 盘导出显示真实文件复制进度和阶段"))
@@ -750,7 +755,7 @@ Public Class FormMain
         If ReturnCode = ProcessReturnValues.Exception Then
             If Not IsLogShown Then
                 FeedbackInfo()
-                Logger.Info("PCLU 项目主页：https://github.com/hejinye7/PCLlife（仓库尚未启用 Issues，暂时无法在线提交错误报告）")
+                Logger.Info("请在 https://github.com/hejinye7/PCLU/issues/new/choose 提交 PCLU 错误报告。")
                 IsLogShown = True
                 StartProcess(Paths.Base & "PCL\Log1.txt")
             End If

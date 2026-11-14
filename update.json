@@ -2,14 +2,14 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.0.7",
-  "versionCode": 445,
-  "releaseNotes": "PCLU 1.0.0.7：修复 LabyMod 等大型实例导出的单实例 BAT 因启动参数过长而无法运行；U 盘导出显示按实际复制字节计算的进度；反馈入口不再跳转到未启用的 GitHub Issues 页面。",
-  "downloadUrl": "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
+  "version": "1.0.0.8",
+  "versionCode": 447,
+  "releaseNotes": "PCLU 1.0.0.8：新功能投票和提案入口改为 PCLU Discussions 的 Ideas 分类；修复主题包下载地址及 LabyMod 选择卡顿；更新线路使用 PCLU 仓库，并保留上游及第三方项目链接。",
+  "downloadUrl": "https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",
   "downloadUrls": [
-    "https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
-    "https://gh-proxy.com/https://github.com/hejinye7/PCLlife/releases/latest/download/PCLU.exe",
-    "https://cdn.jsdelivr.net/gh/hejinye7/PCLlife@main/Release/PCLU.exe"
+    "https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",
+    "https://gh-proxy.com/https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",
+    "https://cdn.jsdelivr.net/gh/hejinye7/PCLU@main/Release/PCLU.exe"
   ],
-  "releasePage": "https://github.com/hejinye7/PCLlife/releases/latest"
+  "releasePage": "https://github.com/hejinye7/PCLU/releases/latest"
 }

@@ -25,12 +25,19 @@ Public Class PageDownloadInstall
         LabLabyMod.Text = "正在读取 LabyMod 官方清单……"
         Try
             Dim Channel = CStr(CType(ComboLabyModChannel.SelectedItem, MyComboBoxItem).Tag)
-            Dim Manifest As JObject = Nothing
-            Await Task.Run(Sub()
-                               Manifest = NetRequestByClientRetry($"https://releases.r2.labymod.net/api/v1/manifest/{Channel}/latest.json", RequireJson:=True).DeserializeJson(Of JObject)()
-                           End Sub)
-            If Not CType(Manifest("minecraftVersions"), JArray).Any(Function(Item) Item("version")?.ToString() = VanillaName) Then
-                Throw New Exception("当前 Minecraft 版本没有 LabyMod 官方组件。")
+            Dim Manifest = Await Task.Factory.StartNew(
+                Function() NetRequestByClient($"https://releases.r2.labymod.net/api/v1/manifest/{Channel}/latest.json", Timeout:=10000, RequireJson:=True).DeserializeJson(Of JObject)(),
+                Threading.CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)
+            Dim SupportedVersions = CType(Manifest("minecraftVersions"), JArray).
+                Select(Function(Item) Item("version")?.ToString()).
+                Where(Function(Version) Not String.IsNullOrWhiteSpace(Version)).ToList()
+            If Not SupportedVersions.Contains(VanillaName) Then
+                Dim SupportedText = String.Join("、", SupportedVersions.Take(5))
+                Dim Message = $"LabyMod 官方当前不支持 Minecraft {VanillaName}。清单列出的版本：{SupportedText}。请返回版本列表选择其中一个版本。"
+                LabLabyMod.Text = "当前 Minecraft 版本暂不受支持"
+                Logger.Info(Message)
+                MyMsgBox(Message, "LabyMod 版本不支持", "确定")
+                Return
             End If
             LabyModCommit = Manifest("commitReference").ToString()
             SelectedLabyMod = True
@@ -242,6 +249,7 @@ Public Class PageDownloadInstall
         Static Ongoing As Boolean = False '#3742 中，LoadOptiFineGetError 会初始化 LoadOptiFine，触发事件 LoadOptiFine.StateChanged，导致再次调用 SelectReload
         If VanillaName Is Nothing OrElse Ongoing Then Return
         Ongoing = True
+        Try
         '主预览
         SelectNameUpdate()
         ImgLogo.Source = GetSelectLogo()
@@ -251,6 +259,17 @@ Public Class PageDownloadInstall
         For Each OtherCard In {CardOptiFine, CardLiteLoader, CardForge, CardNeoForge, CardFabric, CardFabricApi, CardOptiFabric}
             OtherCard.IsEnabled = Not SelectedLabyMod
         Next
+        If SelectedLabyMod Then
+            For Each ClearButton In {BtnOptiFineClear, BtnLiteLoaderClear, BtnForgeClear, BtnNeoForgeClear,
+                                     BtnFabricClear, BtnFabricApiClear, BtnOptiFabricClear}
+                ClearButton.Visibility = Visibility.Collapsed
+            Next
+            For Each ComponentIcon In {ImgOptiFine, ImgLiteLoader, ImgForge, ImgNeoForge, ImgFabric, ImgFabricApi, ImgOptiFabric}
+                ComponentIcon.Visibility = Visibility.Collapsed
+            Next
+            Ongoing = False
+            Return
+        End If
         'OptiFine
         Dim OptiFineError As String = LoadOptiFineGetError()
         CardOptiFine.MainSwap.Visibility = If(OptiFineError Is Nothing, Visibility.Visible, Visibility.Collapsed)
@@ -418,7 +437,9 @@ Public Class PageDownloadInstall
             HintModOptiFine.Visibility = Visibility.Collapsed
         End If
         '结束
-        Ongoing = False
+        Finally
+            Ongoing = False
+        End Try
     End Sub
     ''' <summary>
     ''' 清空已选择的项目。

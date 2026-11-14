@@ -131,10 +131,12 @@ Public Class PageOtherLeft
         e.Handled = True
     End Sub
     Public Shared Sub TryFeedback()
-        Select Case MyMsgBox("PCLU 项目仓库目前未开放 Issues。你可以打开项目主页查看项目状态；启用 Issues 后才能在线提交反馈。",
-                    "反馈", "打开项目主页", "取消")
+        Select Case MyMsgBox("提交前先搜索现有反馈，确认没有重复问题。",
+                    "反馈", "提交新反馈", "查看反馈列表", "取消")
             Case 1
                 Feedback(True, False)
+            Case 2
+                OpenWebsite("https://github.com/hejinye7/PCLU/issues")
         End Select
     End Sub
     Private Sub TryVote(sender As Object, e As RouteEventArgs) Handles ItemVote.Changed
@@ -143,9 +145,13 @@ Public Class PageOtherLeft
         e.Handled = True
     End Sub
     Public Shared Sub TryVote()
-        If MyMsgBox("是否打开 PCLU 项目页面查看或提交功能建议？",
-                    "新功能投票", "打开", "取消") = 2 Then Return
-        OpenWebsite("https://github.com/hejinye7/PCLlife")
+        Select Case MyMsgBox("在 Ideas 讨论区浏览功能建议并用 👍 投票；新建议会作为讨论发布。",
+                    "新功能投票", "查看并投票", "提交新建议", "取消")
+            Case 1
+                OpenWebsite("https://github.com/hejinye7/PCLU/discussions/categories/ideas")
+            Case 2
+                OpenWebsite("https://github.com/hejinye7/PCLU/discussions/new?category=ideas")
+        End Select
     End Sub
 
 End Class

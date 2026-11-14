@@ -173,11 +173,11 @@ Friend Module ModSecret
 
     'PCLU 使用自己的更新清单，避免被官方版本覆盖。
     '顺序按国际站、国内常用 CDN、代理回退排列；清单很小，失败时自动尝试下一条。
-    Public Const LauncherUpdateUrl As String = "https://raw.githubusercontent.com/hejinye7/PCLlife/main/update.json"
+    Public Const LauncherUpdateUrl As String = "https://raw.githubusercontent.com/hejinye7/PCLU/main/update.json"
     Public ReadOnly LauncherUpdateUrls As String() = {
         LauncherUpdateUrl,
-        "https://cdn.jsdelivr.net/gh/hejinye7/PCLlife@main/update.json",
-        "https://gh-proxy.com/https://raw.githubusercontent.com/hejinye7/PCLlife/main/update.json"
+        "https://cdn.jsdelivr.net/gh/hejinye7/PCLU@main/update.json",
+        "https://gh-proxy.com/https://raw.githubusercontent.com/hejinye7/PCLU/main/update.json"
     }
 
     Friend Function GetLauncherUpdateManifest() As JObject

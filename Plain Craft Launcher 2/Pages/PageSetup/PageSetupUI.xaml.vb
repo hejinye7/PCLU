@@ -180,7 +180,7 @@ Public Class PageSetupUI
         Dim ThemeId As String = CStr(DirectCast(sender, FrameworkElement).Tag)
         Dim IsVideo As Boolean = ThemeId = "video"
         Dim FileName As String = If(IsVideo, "background.mp4", "background.jpg")
-        Dim Url As String = $"https://raw.githubusercontent.com/hejinye7/PCLlife/main/ThemePacks/{ThemeId}/{FileName}"
+        Dim Url As String = $"https://raw.githubusercontent.com/hejinye7/PCLU/main/ThemePacks/{ThemeId}/{FileName}"
         Dim Target As String = Paths.Base & $"PCL\Themes\{ThemeId}\{FileName}"
         RunInNewThread(
             Sub()
@@ -188,7 +188,7 @@ Public Class PageSetupUI
                     DirectoryUtils.Create(PathUtils.RemoveLastPart(Target))
                     NetDownloadByClient(Url, Target, SimulateBrowserHeaders:=True)
                     If IsVideo Then
-                        NetDownloadByClient($"https://raw.githubusercontent.com/hejinye7/PCLlife/main/ThemePacks/{ThemeId}/background.jpg",
+                        NetDownloadByClient($"https://raw.githubusercontent.com/hejinye7/PCLU/main/ThemePacks/{ThemeId}/background.jpg",
                                              Paths.Base & $"PCL\Themes\{ThemeId}\background.jpg", SimulateBrowserHeaders:=True)
                     End If
                     RunInUi(
@@ -394,7 +394,7 @@ Refresh:
                 FrmSetupUI.HintCustomWarn.Visibility = If(Settings.Get(Of Boolean)("HintCustomWarn"), Visibility.Collapsed, Visibility.Visible)
                 FrmSetupUI.HintCustom.Text = $"从指定网址联网获取主页内容。服主也可以用于动态更新服务器公告。{vbCrLf}如果你制作了稳定运行的联网主页，可以点击这里向 PCLU 项目反馈。"
                 CustomEventService.SetEventType(FrmSetupUI.HintCustom, CustomEvent.EventType.打开网页)
-                CustomEventService.SetEventData(FrmSetupUI.HintCustom, "https://github.com/hejinye7/PCLlife")
+                CustomEventService.SetEventData(FrmSetupUI.HintCustom, "https://github.com/hejinye7/PCLU/issues/new/choose")
             Case 3 '预设
                 FrmSetupUI.PanCustomPreset.Visibility = Visibility.Visible
                 FrmSetupUI.PanCustomLocal.Visibility = Visibility.Collapsed

@@ -969,7 +969,7 @@ NextFile:
         If ForceOpenLog OrElse (ShowMsgbox AndAlso MyMsgBox("若你在汇报一个 Bug，请点击 打开文件夹 按钮，并上传 Log(1~5).txt 中包含错误信息的文件。" & vbCrLf & "游戏崩溃一般与启动器无关，请不要因为游戏崩溃而提交反馈。", "反馈提交提醒", "打开文件夹", "不需要") = 1) Then
             RunInNewThread(Sub() OpenExplorer(Paths.Base & "PCL\Log1.txt"), "Open Feedback Logs", ThreadPriority.BelowNormal)
         End If
-        OpenWebsite("https://github.com/hejinye7/PCLlife")
+        OpenWebsite("https://github.com/hejinye7/PCLU/issues/new/choose")
     End Sub
     ''' <summary>
     ''' 在日志中输出系统诊断信息。
