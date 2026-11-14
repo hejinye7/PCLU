@@ -140,7 +140,8 @@ public sealed class McVersion {
         if (jsonText.ContainsIgnoreCase("net.fabricmc:fabric-loader") || jsonText.ContainsIgnoreCase("org.quiltmc:quilt-loader")) {
             ModLoaderVersions[ModLoaders.Fabric] = jsonText.RegexSeek(@"(?<=(net\.fabricmc:fabric-loader:|org\.quiltmc:quilt-loader:))[0-9\.]+(\+build.[0-9]+)?")?
                                                         .Replace("+build", "") ?? "未知版本";
-        } else if (jsonText.ContainsIgnoreCase("net.neoforge")) {
+        } else if (FindArgumentValue(json, "--fml.neoForgeVersion") is not null ||
+                   (FindArgumentValue(json, "--fml.forgeVersion") is not null && jsonText.ContainsIgnoreCase("net.neoforged:neoforge"))) {
             // 1.20.1 JSON 范例："--fml.forgeVersion", "47.1.99"
             // 1.20.2+ JSON 范例："--fml.neoForgeVersion", "20.6.119-beta"
             ModLoaderVersions[ModLoaders.NeoForge] = FindArgumentValue(json, "--fml.neoForgeVersion") ?? FindArgumentValue(json, "--fml.forgeVersion") ?? "未知版本";

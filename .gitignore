@@ -344,3 +344,8 @@ healthchecksdb
 MaskFiles/
 .build/
 .tmp-net48/
+
+# Keep the current updater payload on jsDelivr for users whose GitHub download times out.
+!Release/
+Release/*
+!Release/PCLU.exe

@@ -171,20 +171,27 @@ Friend Module ModSecret
 
 #Region "更新"
 
+    Private UpdateCheckRunning As Integer = 0
+
     'PCLU 使用自己的更新清单，避免被官方版本覆盖。
-    '顺序按国际站、国内常用 CDN、代理回退排列；清单很小，失败时自动尝试下一条。
+    '清单优先使用 CDN，并为每次请求附加时间戳，避免旧缓存阻止版本检测。
     Public Const LauncherUpdateUrl As String = "https://raw.githubusercontent.com/hejinye7/PCLU/main/update.json"
     Public ReadOnly LauncherUpdateUrls As String() = {
-        LauncherUpdateUrl,
         "https://cdn.jsdelivr.net/gh/hejinye7/PCLU@main/update.json",
-        "https://gh-proxy.com/https://raw.githubusercontent.com/hejinye7/PCLU/main/update.json"
+        "https://gh-proxy.com/https://raw.githubusercontent.com/hejinye7/PCLU/main/update.json",
+        LauncherUpdateUrl,
+        "https://raw.githubusercontent.com/hejinye7/PCLlife/main/update.json"
     }
 
     Friend Function GetLauncherUpdateManifest() As JObject
         Dim LastException As Exception = Nothing
         For Each Url In LauncherUpdateUrls
             Try
-                Return NetRequestByClientRetry(Url, RequireJson:=True).DeserializeJson(Of JObject)()
+                Dim Separator = If(Url.Contains("?"), "&", "?")
+                Dim RequestUrl = Url & Separator & "t=" & DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                Dim Manifest = NetRequestByClientRetry(RequestUrl, RequireJson:=True).DeserializeJson(Of JObject)()
+                If Manifest("versionCode") Is Nothing OrElse Manifest("downloadUrls") Is Nothing Then Throw New InvalidDataException("更新清单缺少必要字段。")
+                Return Manifest
             Catch ex As Exception
                 LastException = ex
                 Logger.Warn(ex, "获取 PCLU 更新清单失败：" & Url)
@@ -220,6 +227,7 @@ Friend Module ModSecret
     ''' </summary>
     Friend Sub UpdateCheckAutomatic()
         If Environment.GetCommandLineArgs().Contains("--update") Then Return
+        If Threading.Interlocked.CompareExchange(UpdateCheckRunning, 1, 0) <> 0 Then Return
         RunInNewThread(
             Sub()
                 Try
@@ -234,19 +242,11 @@ Friend Module ModSecret
                     If Not DownloadUrls.Any() Then Throw New Exception("更新清单没有可用的下载地址。")
                     Dim NewFile = Paths.Base & "PCL\Update\PCLU.new.exe"
                     DirectoryUtils.Create(PathUtils.RemoveLastPart(NewFile))
-                    Dim LastException As Exception = Nothing
-                    For Each Url In DownloadUrls.Distinct()
-                        Try
-                            NetDownloadByClient(Url, NewFile, SimulateBrowserHeaders:=True)
-                            If New FileInfo(NewFile).Length < 100000 Then Throw New Exception("更新文件体积异常。")
-                            LastException = Nothing
-                            Exit For
-                        Catch ex As Exception
-                            LastException = ex
-                            FileUtils.Delete(NewFile)
-                        End Try
-                    Next
-                    If LastException IsNot Nothing Then Throw LastException
+                    FileUtils.Delete(NewFile)
+                    Dim ExpectedHash = Manifest("sha256")?.ToString()
+                    NetDownloadByLoader(DownloadUrls.Distinct(), NewFile,
+                        Check:=New FileChecker With {.MinSize = 100000, .Hash = If(String.IsNullOrWhiteSpace(ExpectedHash), Nothing, ExpectedHash)},
+                        SimulateBrowserHeaders:=True)
                     IsUpdateWaitingRestart = True
                     RunInUi(Sub() Hint($"PCLU {Manifest("version")} 已下载，正在重启替换……", HintType.Green))
                     Thread.Sleep(500)
@@ -254,6 +254,8 @@ Friend Module ModSecret
                 Catch ex As Exception
                     Logger.Warn(ex, "PCLU 自动更新失败")
                     RunInUi(Sub() Hint("PCLU 自动更新失败，请稍后重试。", HintType.Red))
+                Finally
+                    Threading.Interlocked.Exchange(UpdateCheckRunning, 0)
                 End Try
             End Sub, "PCLU Forced Update", ThreadPriority.BelowNormal)
     End Sub

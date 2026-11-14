@@ -11,6 +11,17 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 451 Then 'Release 1.0.2
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：基岩版 UWP 可在下载页选择版本，下载、解压并静默注册"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：正式版与预览版分开显示，安装包及版本文件保存在 .minecraft\bedrock"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：支持在启动器内安装本地 AppX/MSIX 包并显示完整任务进度"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：LabyMod 共用旧核心文件导致 26.3 启动时版本识别崩溃"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "优化：LabyMod 依赖使用官方地址，避免无效镜像 404 拖慢安装"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：LabyMod 首次启动显示英文，并预先下载隔离支持库避免启动时超时"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "修复：LabyMod 携带的工具库被误识别为 NeoForge"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：旧版更新下载速度慢或超时，新增 CDN 与多线路分段下载"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "说明：安装源使用 MCAPPX 索引与 Microsoft 官方 CDN，账号和游戏所有权仍由微软校验"))
+            End If
             If LastVersion < 449 Then 'Release 1.0.1
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：游戏安装完成后自动选择新实例，并刷新启动页版本状态"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：并发下载重试时速度读数偏低；改用实际网络字节和近 1 秒统计窗口"))
@@ -170,6 +181,15 @@ Public Class FormMain
                 BugCount += 21
             End If
         Else
+            If LastVersion < 452 Then 'Snapshot 1.0.2
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "新增：基岩版 UWP 可在下载页选择版本，下载、解压并静默注册"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：正式版与预览版分开显示，安装包及版本文件保存在 .minecraft\bedrock"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：支持在启动器内安装本地 AppX/MSIX 包并显示完整任务进度"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：LabyMod 共用旧核心文件导致 26.3 启动时版本识别崩溃"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "优化：LabyMod 依赖使用官方地址，避免无效镜像 404 拖慢安装"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：旧版更新下载速度慢或超时，新增 CDN 与多线路分段下载"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "说明：安装源使用 MCAPPX 索引与 Microsoft 官方 CDN，账号和游戏所有权仍由微软校验"))
+            End If
             If LastVersion < 450 Then 'Snapshot 1.0.1
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：游戏安装完成后自动选择新实例，并刷新启动页版本状态"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：并发下载重试时速度读数偏低；改用实际网络字节和近 1 秒统计窗口"))

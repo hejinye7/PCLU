@@ -140,7 +140,7 @@
             <local:MyCard Margin="0,0,0,15" Title="上游与第三方鸣谢">
                 <StackPanel Margin="25,39,23,20">
                     <TextBlock Text="PCLU 使用了公开项目、开源组件及社区服务。感谢各项目作者和维护者：" TextWrapping="Wrap" Margin="0,0,0,8" />
-                    <TextBlock Text="PCL（龙腾猫跃）：启动器上游项目与部分代码；Newtonsoft.Json、Ookii.Dialogs.Wpf：开源组件；Fabric、Forge、NeoForge、Modrinth、LabyMod：游戏加载器或资源分发服务；Eclipse Temurin：Java 运行时发行版；BMCLAPI、重庆大学开源软件镜像站：下载镜像；EasyTier：联机组件。各项目版权、商标与许可归其所有者所有。" TextWrapping="Wrap" />
+                    <TextBlock Text="PCL（龙腾猫跃）：启动器上游项目与部分代码；Newtonsoft.Json、Ookii.Dialogs.Wpf：开源组件；Fabric、Forge、NeoForge、Modrinth、LabyMod：游戏加载器或资源分发服务；BedrockLauncher.Core、MCAPPX：基岩版部署思路与版本索引；Eclipse Temurin：Java 运行时发行版；BMCLAPI、重庆大学开源软件镜像站：下载镜像；EasyTier：联机组件。各项目版权、商标与许可归其所有者所有。" TextWrapping="Wrap" />
                 </StackPanel>
             </local:MyCard>
             <local:MyCard Margin="0,0,0,15" Title="赞助者">

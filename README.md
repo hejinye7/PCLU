@@ -4,7 +4,7 @@ PCLU 的中文名为 **PCL 旗舰版**，是个人开发者维护的 Plain Craft
 
 PCLU 基于 PCL 公开代码并按其分发许可制作，是由个人独立维护的第三方修改版。PCLU 与 PCL 原作者及发行方没有隶属、授权、合作或官方背书关系；PCLU 的功能、发行、更新与支持由 PCLU 维护者负责。PCL 名称及相关权利归各自权利人所有。PCLU 不是 Minecraft 官方产品，亦未获 Mojang 或 Microsoft 批准或与其关联。
 
-1.0.1 修复了游戏实例安装完成后启动页仍停留在旧版本或加载状态的问题，并调整下载速度统计，避免并发重试时低估速度。下载页增加 Minecraft for Windows 与 Minecraft Preview 的官方安装入口。基岩版 Windows 安装、更新和授权由 Microsoft Store 管理；PCLU 不提供商店游戏文件的独立下载，也不把它伪装成 Java 版实例。
+1.0.2 在下载页加入基岩版 UWP 版本选择、下载、解压和静默注册，安装包与解压文件保存在 `.minecraft\bedrock`。版本索引来自 MCAPPX，安装文件由 Microsoft 官方 CDN 提供；微软账号、游戏所有权与正版授权校验保持不变。
 
 项目维护：个人开发者（署名及鸣谢见启动器“关于与鸣谢”页面）。
 

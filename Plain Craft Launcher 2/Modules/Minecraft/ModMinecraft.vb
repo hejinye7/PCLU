@@ -1861,10 +1861,12 @@ OnLoaded:
         Dim Result As New List(Of NetFile)
         '获取
         For Each Token As McLibEntry In Libs
+            Dim IsLabyModLibrary = Token.Name.ContainsIgnoreCase("labymod") OrElse Token.Name.StartsWithF("net.laby:", True) OrElse
+                (Token.Url IsNot Nothing AndAlso Token.Url.ContainsIgnoreCase("labymod.net/"))
             '检查器
             Dim Checker As FileChecker
-            If Token.Name.ContainsIgnoreCase("labymod") Then
-                Checker = New FileChecker '不检查 LabyMod 的文件，它们提供的文件校验信息是错的（#3225）
+            If IsLabyModLibrary AndAlso Token.Size = 0 AndAlso String.IsNullOrWhiteSpace(Token.SHA1) Then
+                Checker = New FileChecker
             Else
                 Checker = New FileChecker With {.ActualSize = If(Token.Size = 0, -1, Token.Size), .Hash = Token.SHA1}
             End If
@@ -1875,7 +1877,9 @@ OnLoaded:
             End If
             If Token.Url IsNot Nothing Then
                 '获取 URL 的真实地址
-                If Token.Url.Contains("maven") Then
+                If IsLabyModLibrary Then
+                    Urls.Add(Token.Url)
+                ElseIf Token.Url.Contains("maven") Then
                     Urls.AddRange(DlSourceLibraryGet(Token.Url))
                 Else
                     Urls.Add(Token.Url)
@@ -1896,7 +1900,7 @@ OnLoaded:
                 OptiFineBase = "/maven/com/optifine/" & OptiFineBase
                 If OptiFineBase.Contains("_pre") Then OptiFineBase = OptiFineBase.Replace("com/optifine/", "com/optifine/preview_")
                 Urls.Add("https://bmclapi2.bangbang93.com" & OptiFineBase)
-            ElseIf Urls.Count <= 2 Then
+            ElseIf Urls.Count <= 2 AndAlso Not IsLabyModLibrary Then
                 '普通文件
                 Urls.AddRange(DlSourceLibraryGet("https://libraries.minecraft.net" & Token.LocalPath.Replace(CustomMcFolder & "libraries", "").Replace("\", "/")))
             End If

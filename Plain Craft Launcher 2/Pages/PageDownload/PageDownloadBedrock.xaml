@@ -6,26 +6,43 @@
     PanScroll="PanBack">
     <local:MyScrollViewer x:Name="PanBack" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="25,10,25,25">
-            <local:MyHint Margin="0,0,0,15" Theme="Blue" Text="基岩版 Windows 由 Microsoft Store 安装并验证授权。PCLU 提供官方入口，不下载或复制商店保护的游戏文件。" />
-            <local:MyCard Title="Minecraft for Windows" Margin="0,0,0,15">
+            <local:MyHint Margin="0,0,0,15" Theme="Blue" Text="PCLU 会把安装包和版本文件保存到 .minecraft\bedrock，并在后台完成 Windows 应用包注册。游戏授权仍由 Microsoft 账户校验。" />
+            <local:MyCard Title="安装基岩版" Margin="0,0,0,15">
+                <Grid Margin="20,40,20,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="105" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="35" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <local:MyComboBox x:Name="ComboChannel" Grid.Column="0" Height="34" />
+                    <local:MyComboBox x:Name="ComboVersion" Grid.Column="2" Height="34" />
+                    <local:MyButton x:Name="BtnRefresh" Grid.Column="4" Text="刷新" Height="35" Click="Refresh_Click" />
+                    <local:MyButton x:Name="BtnInstall" Grid.Column="6" Text="下载并安装" Height="35" IsEnabled="False" Click="Install_Click" />
+                    <TextBlock x:Name="LabStatus" Grid.Row="1" Grid.ColumnSpan="7" Margin="0,10,0,0" Foreground="{DynamicResource ColorBrushGray2}" TextWrapping="Wrap" Text="正在读取版本列表……" />
+                </Grid>
+            </local:MyCard>
+            <local:MyCard Title="管理" Margin="0,0,0,15">
                 <StackPanel Margin="20,40,20,18">
-                    <TextBlock Text="正式版" FontSize="15" />
-                    <TextBlock Text="安装、更新和账号授权由 Microsoft Store 管理。安装后从 Windows 开始菜单或 Xbox 应用启动。" Foreground="{DynamicResource ColorBrushGray2}" Margin="0,6,0,14" TextWrapping="Wrap" />
-                    <local:MyButton x:Name="BtnOpenBedrockStore" Text="安装 / 打开 Microsoft Store" Width="220" Height="35" Click="OpenBedrockStore_Click" />
+                    <StackPanel Orientation="Horizontal">
+                        <local:MyButton x:Name="BtnLaunch" Text="启动基岩版" Width="145" Height="35" Click="Launch_Click" />
+                        <local:MyButton x:Name="BtnOpenFolder" Text="打开版本目录" Width="145" Height="35" Margin="12,0,0,0" Click="OpenFolder_Click" />
+                        <local:MyButton x:Name="BtnInstallLocal" Text="安装本地包" Width="145" Height="35" Margin="12,0,0,0" Click="InstallLocal_Click" />
+                    </StackPanel>
+                    <TextBlock Margin="0,12,0,0" Foreground="{DynamicResource ColorBrushGray2}" TextWrapping="Wrap" Text="安装时可能需要启用 Windows 开发者模式或确认管理员权限。正式版与预览版是不同的 Windows 应用；安装新版会更新同一频道当前注册的版本。" />
                 </StackPanel>
             </local:MyCard>
-            <local:MyCard Title="Minecraft Preview" Margin="0,0,0,15">
+            <local:MyCard Title="来源与说明" Margin="0,0,0,15">
                 <StackPanel Margin="20,40,20,18">
-                    <TextBlock Text="预览版" FontSize="15" />
-                    <TextBlock Text="预览版由 Microsoft 官方单独分发，是否可安装取决于账号资格和所在地区；它与正式版是不同的应用。" Foreground="{DynamicResource ColorBrushGray2}" Margin="0,6,0,14" TextWrapping="Wrap" />
-                    <local:MyButton Text="查看官方 Preview 说明" Width="210" Height="35"
-                                    local:CustomEventService.EventType="打开网页" local:CustomEventService.EventData="https://www.minecraft.net/en-us/about-minecraft-preview" />
-                </StackPanel>
-            </local:MyCard>
-            <local:MyCard Title="实例与设置" Margin="0,0,0,15">
-                <StackPanel Margin="20,40,20,18">
-                    <TextBlock Text="基岩版不是 Java 版实例" FontSize="15" />
-                    <TextBlock Text="商店版安装在 Windows 应用包环境中，PCLU 的 Java 版本列表、Java 路径、内存和版本隔离设置不适用于基岩版。商店版数据位置由 Windows 和游戏管理，不会写入 .minecraft\versions，也不能作为可移植目录放入 bedrockversion 后独立启动。" Foreground="{DynamicResource ColorBrushGray2}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                    <TextBlock Text="版本索引来自 MCAPPX，安装文件由索引指定的 Xbox CDN 提供。PCLU 会校验索引中的 MD5，解压后使用 Windows Add-AppxPackage 静默注册。" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource ColorBrushGray2}" TextWrapping="Wrap" Text="这不是免安装程序：Windows 仍需注册应用包和运行库。PCLU 不绕过 Microsoft 账号、游戏所有权或授权检查。" />
                 </StackPanel>
             </local:MyCard>
         </StackPanel>

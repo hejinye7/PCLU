@@ -2,14 +2,16 @@
   "name": "Plain Craft Launcher Ultra",
   "shortName": "PCLU",
   "displayName": "PCLU · PCL 旗舰版",
-  "version": "1.0.1",
-  "versionCode": 449,
-  "releaseNotes": "PCLU 1.0.1：修复安装后未自动选中新实例及并发重试时下载速度偏低；社区资源新增基岩版官方安装入口。",
-  "downloadUrl": "https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",
+  "version": "1.0.2",
+  "versionCode": 451,
+  "releaseNotes": "PCLU 1.0.2：新增基岩版 UWP 下载与静默安装；修复 LabyMod 26.3 旧核心崩溃、首次启动英文与 NeoForge 误判；预下载 LabyMod 隔离支持库；优化官方依赖下载和旧版更新线路。",
+  "sha256": "4adb683ee122ab2e6d78e1005ed42c9943fd5076f93e4c6c85936122e7ee287b",
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/hejinye7/PCLU@main/Release/PCLU.exe?v=451",
   "downloadUrls": [
-    "https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",
+    "https://cdn.jsdelivr.net/gh/hejinye7/PCLU@main/Release/PCLU.exe?v=451",
     "https://gh-proxy.com/https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",
-    "https://cdn.jsdelivr.net/gh/hejinye7/PCLU@main/Release/PCLU.exe"
+    "https://github.com/hejinye7/PCLU/releases/latest/download/PCLU.exe",
+    "https://raw.githubusercontent.com/hejinye7/PCLU/main/Release/PCLU.exe?v=451"
   ],
   "releasePage": "https://github.com/hejinye7/PCLU/releases/latest"
 }

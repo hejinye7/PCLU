@@ -1779,8 +1779,11 @@ Retry:
         '重复版本检查
         Dim VersionFolder As String = PathUtils.AddSlashSuffix(Request.InstanceFolder)
         If FileUtils.Exists($"{VersionFolder}{Request.NewInstanceName}.json") Then
-            Hint("版本 " & Request.NewInstanceName & " 已经存在！", HintType.Red)
-            Throw New OperationCanceledException
+            If Request.LabyModChannel Is Nothing Then
+                Hint("版本 " & Request.NewInstanceName & " 已经存在！", HintType.Red)
+                Throw New OperationCanceledException
+            End If
+            Logger.Info($"LabyMod 实例 {Request.NewInstanceName} 已存在，将重新合并清单并修复核心文件。")
         End If
 
         Dim LoaderList As New List(Of LoaderBase)
@@ -1896,6 +1899,28 @@ Retry:
             End Sub) With {.ProgressWeight = 1, .Show = False})
             LabyAssets.Add(New LoaderDownload("下载 LabyMod 资源文件", New List(Of NetFile)) With {.ProgressWeight = 4, .Show = False})
             LoaderList.Add(New LoaderCombo(Of String)("下载 LabyMod 资源文件", LabyAssets) With {.ProgressWeight = 5, .Show = False})
+
+            Dim LabyIsolatedLibraries As New List(Of LoaderBase)
+            LabyIsolatedLibraries.Add(New LoaderTask(Of String, List(Of NetFile))("分析 LabyMod 隔离支持库",
+            Sub(Task)
+                Dim LibraryFiles As New List(Of NetFile)
+                Dim Libraries = TryCast(Request.LabyModLibraries("isolated_libraries"), JArray)
+                If Libraries IsNot Nothing Then
+                    Dim LibraryFolder = Path.Combine(New McInstance(VersionFolder).PathIndie, "labymod-neo", "libraries")
+                    For Each Library As JObject In Libraries.Children(Of JObject)()
+                        Dim Versions = TryCast(Library("versions"), JArray)
+                        If Versions IsNot Nothing AndAlso Not Versions.Any(Function(Version) Version.ToString().Equals(Request.Components.MinecraftVersion, StringComparison.OrdinalIgnoreCase)) Then Continue For
+                        Dim Url = Library("url")?.ToString()
+                        If String.IsNullOrWhiteSpace(Url) OrElse Url.Contains("natives-linux") OrElse Url.Contains("natives-macos") OrElse Url.Contains("natives-windows-arm") Then Continue For
+                        Dim RelativePath = New Uri(Url).AbsolutePath.AfterLast("/libraries/")
+                        If RelativePath = Url OrElse RelativePath.Contains("..") Then Throw New Exception("LabyMod 隔离库清单包含无效路径。")
+                        LibraryFiles.Add(New NetFile({Url}, Path.Combine(LibraryFolder, RelativePath.Replace("/", "\"))))
+                    Next
+                End If
+                Task.Output = LibraryFiles
+            End Sub) With {.ProgressWeight = 1, .Show = False})
+            LabyIsolatedLibraries.Add(New LoaderDownload("下载 LabyMod 隔离支持库", New List(Of NetFile)) With {.ProgressWeight = 7, .Show = False})
+            LoaderList.Add(New LoaderCombo(Of String)("下载 LabyMod 隔离支持库", LabyIsolatedLibraries) With {.ProgressWeight = 8})
         End If
         '补全文件
         Dim LoadersLib As New List(Of LoaderBase)
@@ -2030,13 +2055,18 @@ Retry:
             Next
         End If
         Dim Commit = Request.LabyModCore("commitReference").ToString()
+        Dim LabyVersion = Request.LabyModCore("labyModVersion")?.ToString()
+        If String.IsNullOrWhiteSpace(LabyVersion) Then LabyVersion = "4"
+        Dim CoreVersion = (LabyVersion & "-" & Commit).RegexReplace("[^0-9A-Za-z._-]", "-")
+        Dim CorePath = $"net/labymod/LabyMod/{CoreVersion}/LabyMod-{CoreVersion}.jar"
+        'LabyMod 的清单大小偶尔会滞后于 CDN 文件，以官方 SHA-1 为准。
         Libraries.Add(New JObject From {
-            {"name", "net.labymod:LabyMod:4"},
+            {"name", $"net.labymod:LabyMod:{CoreVersion}"},
             {"downloads", New JObject From {
                 {"artifact", New JObject From {
-                    {"path", "net/labymod/LabyMod/4/LabyMod-4.jar"},
+                    {"path", CorePath},
                     {"sha1", Request.LabyModCore("sha1")?.DeepClone()},
-                    {"size", Request.LabyModCore("size")?.DeepClone()},
+                    {"size", 0},
                     {"url", $"https://releases.r2.labymod.net/api/v1/download/labymod4/{Request.LabyModChannel}/{Commit}.jar"}
                 }}
             }}
@@ -2045,9 +2075,13 @@ Retry:
         Target("labymod_data") = New JObject From {
             {"channelType", Request.LabyModChannel},
             {"commitReference", Commit},
-            {"version", Request.LabyModCore("labyModVersion")?.DeepClone()},
+            {"version", LabyVersion},
+            {"minecraftVersion", Request.Components.MinecraftVersion},
             {"versionType", If(Request.LabyModChannel = "snapshot", "snapshot", "release")}
         }
+        'LabyMod 直接跟随 Minecraft 的实例语言。首次启动前写入中文，避免其回退为英文。
+        Dim OptionsPath = Path.Combine(Request.InstanceFolder, "options.txt")
+        WriteIni(OptionsPath, "lang", "zh_cn")
     End Sub
     ''' <summary>
     ''' 进行合并安装。返回是否已经开始安装。
