@@ -216,11 +216,11 @@ Public Module ModMinecraft
             'Authlib-Injector 重判
             If AniControlEnabled = 0 AndAlso
                Settings.Get(Of String)("VersionServerAuthServer", Instance:=value) <> Settings.Get(Of String)("CacheAuthServerServer") AndAlso
-               Settings.Get(Of Integer)("VersionServerLogin", Instance:=value) = 4 Then
+               (Settings.Get(Of Integer)("VersionServerLogin", Instance:=value) = 4 OrElse Settings.Get(Of Integer)("VersionServerLogin", Instance:=value) = 5) Then
                 Settings.Set("CacheAuthAccess", "")
                 Logger.Info("服务器改变，要求重新登录 Authlib-Injector")
             End If
-            If Settings.Get(Of Integer)("VersionServerLogin", Instance:=value) = 4 Then
+            If Settings.Get(Of Integer)("VersionServerLogin", Instance:=value) = 4 OrElse Settings.Get(Of Integer)("VersionServerLogin", Instance:=value) = 5 Then
                 Settings.Set("CacheAuthServerServer", Settings.Get(Of String)("VersionServerAuthServer", Instance:=value))
                 Settings.Set("CacheAuthServerName", Settings.Get(Of String)("VersionServerAuthName", Instance:=value))
                 Settings.Set("CacheAuthServerRegister", Settings.Get(Of String)("VersionServerAuthRegister", Instance:=value))
@@ -749,6 +749,7 @@ ExitDataLoad:
                 ElseIf State <> McInstanceState.Error Then
                     If Settings.Get(Of Integer)("VersionServerLogin", Instance:=Me) = 3 Then Info += ", 统一通行证验证"
                     If Settings.Get(Of Integer)("VersionServerLogin", Instance:=Me) = 4 Then Info += ", Authlib 验证"
+                    If Settings.Get(Of Integer)("VersionServerLogin", Instance:=Me) = 5 Then Info += ", LittleSkin 验证"
                 End If
             End If
         End Sub
@@ -1814,7 +1815,7 @@ OnLoaded:
         End If
 
         'Authlib-Injector 文件
-        If Settings.Get(Of Integer)("VersionServerLogin", Instance:=Instance) = 4 Then
+        If Settings.Get(Of Integer)("VersionServerLogin", Instance:=Instance) = 4 OrElse Settings.Get(Of Integer)("VersionServerLogin", Instance:=Instance) = 5 Then
             Dim TargetFile = PathPure.Value & "authlib-injector.jar"
             Try
                 Logger.Info("开始获取 Authlib-Injector 下载信息")

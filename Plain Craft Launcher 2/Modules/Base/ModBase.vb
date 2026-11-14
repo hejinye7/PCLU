@@ -6,12 +6,12 @@ Public Module ModBase
 #Region "声明"
 
     '下列版本信息由更新器自动修改
-    Public Const VersionBaseName As String = "1.0.0.3" 'PCLU 显示用版本名
+    Public Const VersionBaseName As String = "1.0.0.6" 'PCLU 显示用版本名
     Public Const CommitHash As String = "" 'Commit Hash，由 GitHub Workflow 自动替换
 #If RELEASE Then
-    Public Const VersionCode As Integer = 437 '正式版
+    Public Const VersionCode As Integer = 443 '正式版
 #Else
-    Public Const VersionCode As Integer = 438 '快照版
+    Public Const VersionCode As Integer = 444 '快照版
 #End If
 
     '版本信息
@@ -998,7 +998,20 @@ Public Module ModBase
                 Throw New Exception(Url & " 不是一个有效的网址，它必须以 http 开头！")
             End If
             Logger.Info($"正在打开网页：{Url}")
-            StartProcess(Url)
+            RunInNewThread(
+                Sub()
+                    Try
+                        StartProcess(Url)
+                    Catch ex As Exception
+                        Logger.Warn(ex, $"无法打开网页（{Url}）")
+                        RunInUi(
+                            Sub()
+                                ClipboardSet(Url, False)
+                                MyMsgBox("可能由于浏览器未正确配置，PCL 无法为你打开网页。" & vbCrLf & "网址已经复制到剪贴板，若有需要可以手动粘贴访问。" & vbCrLf &
+                                         $"网址：{Url}", "无法打开网页")
+                            End Sub)
+                    End Try
+                End Sub, "Open Website", ThreadPriority.BelowNormal)
         Catch ex As Exception
             Logger.Warn(ex, $"无法打开网页（{Url}）")
             ClipboardSet(Url, False)

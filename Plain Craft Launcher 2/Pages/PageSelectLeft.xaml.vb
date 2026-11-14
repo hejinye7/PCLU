@@ -267,7 +267,7 @@ Public Class PageSelectLeft
     End Sub
 
     '右键菜单
-    Public Sub Remove_Click(sender As Object, e As RoutedEventArgs)
+    Public Async Sub Remove_Click(sender As Object, e As RoutedEventArgs)
         Try
 
             Dim Target As McFolder = CType(CType(CType(sender.Parent, ContextMenu).Parent, Primitives.Popup).PlacementTarget, MyListItem).Tag
@@ -280,10 +280,14 @@ Public Class PageSelectLeft
                 Select Case MyMsgBox("是否需要清理 PCL 在该文件夹中的配置文件？" & vbCrLf & "这包括各个版本的独立设置（如自定义图标、第三方登录配置）等，对游戏本身没有影响。", "配置文件清理", "删除", "保留", "取消")
                     Case 1
                         '删除配置文件
-                        FileUtils.Delete(Target.Location & "PCL.ini")
-                        For Each Instance In DirectoryUtils.EnumerateDirectories(Target.Location & "versions\")
-                            DirectoryUtils.Delete(Path.Combine(Instance, "PCL"), True)
-                        Next
+                        Hint("正在清理该游戏文件夹中的 PCL 设置……", HintType.Blue)
+                        Await Task.Run(
+                            Sub()
+                                FileUtils.Delete(Target.Location & "PCL.ini")
+                                For Each Instance In DirectoryUtils.EnumerateDirectories(Target.Location & "versions\")
+                                    DirectoryUtils.Delete(Path.Combine(Instance, "PCL"), True)
+                                Next
+                            End Sub)
                     Case 2
                         '不删除
                     Case 3

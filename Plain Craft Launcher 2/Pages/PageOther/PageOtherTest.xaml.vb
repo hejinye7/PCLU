@@ -18,11 +18,14 @@ Public Class PageOtherTest
     Private UsbTargetPath As String = ""
     Private UsbEntries As New List(Of UsbInstanceEntry)
     Private UsbInitialized As Boolean = False
+    Private UsbScanStarted As Boolean = False
+    Private UsbScannedFolder As String = ""
 
     Private Sub PageOtherTest_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         PanBack.ScrollToHome()
         LabRepairTitle.Text = If(McInstanceSelected Is Nothing, "当前未选择游戏版本", "修复当前版本：" & McInstanceSelected.Name)
         BtnRepair.IsEnabled = McInstanceSelected IsNot Nothing
+        If UsbScanStarted AndAlso Not PathUtils.IsSame(McFolderSelected, UsbScannedFolder) Then UsbScanStarted = False
         InitUsbPanel()
     End Sub
 
@@ -35,6 +38,38 @@ Public Class PageOtherTest
             RefreshUsbInstances()
         ElseIf UsbEntries.Count = 0 Then
             RefreshUsbInstances()
+        End If
+        If Not UsbScanStarted Then
+            UsbScanStarted = True
+            LabUsbStatus.Text = "正在扫描 Minecraft 文件夹和实例……"
+            RunInNewThread(
+            Sub()
+                Try
+                    McFolderListLoader.WaitForExit()
+                    Dim Folder = McFolderSelected
+                    If String.IsNullOrWhiteSpace(Folder) OrElse Not McFolderList.Any(Function(Item) PathUtils.IsSame(Item.Location, Folder)) Then
+                        Folder = McFolderList.FirstOrDefault()?.Location
+                        If Not String.IsNullOrWhiteSpace(Folder) Then McFolderSelected = Folder
+                    End If
+                    If String.IsNullOrWhiteSpace(Folder) Then Throw New Exception("没有可用的 Minecraft 文件夹。")
+                    LoaderFolderRun(McInstanceListLoader, Folder, LoaderFolderRunType.ForceRun, MaxDepth:=1, ExtraPath:="versions\", WaitForExit:=True)
+                    UsbScannedFolder = Folder
+                    RunInUi(Sub()
+                                If IsLoaded Then
+                                    RefreshUsbInstances()
+                                    LabUsbStatus.Text = If(UsbEntries.Count = 0, "当前 Minecraft 文件夹中没有可用实例。", "实例扫描完成。")
+                                End If
+                            End Sub)
+                Catch ex As Exception
+                    Logger.Error(ex, "扫描 U 盘导出实例失败")
+                    RunInUi(Sub()
+                                If IsLoaded Then
+                                    UsbScanStarted = False
+                                    LabUsbStatus.Text = "扫描失败：" & ex.Message
+                                End If
+                            End Sub)
+                End Try
+            End Sub, "U 盘实例扫描", ThreadPriority.BelowNormal)
         End If
     End Sub
 
@@ -105,11 +140,12 @@ Public Class PageOtherTest
     Private Sub BtnUsbExport_Click(sender As Object, e As EventArgs) Handles BtnUsbExport.Click
         Dim Target = UsbTargetPath
         Dim Instances = SelectedUsbInstances()
+        Dim SingleBatch = UsbMode() = "batch"
         If Target = "" OrElse Instances.Count = 0 Then
             UpdateUsbExportState()
             Return
         End If
-        If UsbMode() = "batch" Then Instances = New List(Of McInstance) From {Instances.First()}
+        If SingleBatch Then Instances = New List(Of McInstance) From {Instances.First()}
         Dim LegacyName = If(Settings.Get(Of McLoginType)("LoginType") = McLoginType.Legacy, CType(PageLoginLegacy.GetLoginData(), McLoginLegacy).UserName, "")
         If PathUtils.IsSame(Target, PathUtils.RemoveSlashSuffix(McFolderSelected)) OrElse Target.StartsWith(PathUtils.RemoveSlashSuffix(McFolderSelected) & "\", StringComparison.OrdinalIgnoreCase) Then
             Hint("U 盘目标不能位于当前 Minecraft 文件夹内。", HintType.Red)
@@ -120,7 +156,7 @@ Public Class PageOtherTest
         RunInNewThread(
         Sub()
             Try
-                PortableExport(Target, Instances, UsbMode() = "batch", LegacyName)
+                PortableExport(Target, Instances, SingleBatch, LegacyName)
             Catch ex As Exception
                 Logger.Error(ex, "U 盘便携安装失败")
                 RunInUi(Sub() LabUsbStatus.Text = "安装失败：" & ex.Message)

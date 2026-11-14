@@ -19,7 +19,6 @@ Public Class PageSetupUI
 
         AniControlEnabled += 1
         Refresh() '#4826
-        StartupComparisonRefresh()
         AniControlEnabled -= 1
 
         '非重复加载部分
@@ -36,31 +35,6 @@ Public Class PageSetupUI
 
     End Sub
 
-    Private Sub StartupComparisonRefresh()
-        Dim OriginalMs As Integer = Math.Max(Settings.Get(Of Integer)("CacheStartupOriginalMs"), 1)
-        Dim CurrentMs As Integer = CInt(ApplicationStartPhase1 + ApplicationStartPhase2 + ApplicationStartPhase3)
-        If CurrentMs <= 0 Then CurrentMs = Settings.Get(Of Integer)("CacheStartupPcllMs")
-        LabStartupOriginal.Text = OriginalMs & " ms"
-        If CurrentMs <= 0 Then
-            LabStartupPcll.Text = "待测"
-            LabStartupDelta.Text = "重启一次后生成实测数据"
-            ScaleStartupOriginal.ScaleX = 1
-            ScaleStartupPcll.ScaleX = 0.08
-            Return
-        End If
-        LabStartupPcll.Text = CurrentMs & " ms"
-        Dim MaxMs As Double = Math.Max(OriginalMs, CurrentMs)
-        ScaleStartupOriginal.ScaleX = Math.Max(OriginalMs / MaxMs, 0.08)
-        ScaleStartupPcll.ScaleX = Math.Max(CurrentMs / MaxMs, 0.08)
-        Dim Delta As Double = (OriginalMs - CurrentMs) / CDbl(OriginalMs) * 100
-        If Math.Abs(Delta) < 0.1 Then
-            LabStartupDelta.Text = "两者基本持平"
-        ElseIf Delta > 0 Then
-            LabStartupDelta.Text = $"PCLU 快 {Delta:F1}%"
-        Else
-            LabStartupDelta.Text = $"PCLU 慢 {-Delta:F1}%"
-        End If
-    End Sub
     Public Sub Refresh()
         Try
             SettingService.RefreshSettings(Me)
@@ -120,12 +94,18 @@ Public Class PageSetupUI
         End If
         CardBackground.TriggerForceResize()
     End Sub
-    Private Sub BtnBackgroundClear_Click(sender As Object, e As EventArgs) Handles BtnBackgroundClear.Click
+    Private Async Sub BtnBackgroundClear_Click(sender As Object, e As EventArgs) Handles BtnBackgroundClear.Click
         If MyMsgBox("即将删除背景图片文件夹中的所有文件。" & vbCrLf & "此操作不可撤销，是否确定？", "警告",, "取消", IsWarn:=True) = 1 Then
             Settings.Set("PcluThemeBackground", "")
             Settings.Set("PcluThemeVideo", False)
             FrmMain.SetThemeVideo(Nothing)
-            DirectoryUtils.Delete(Paths.Base & "PCL\Pictures")
+            Hint("正在清理背景图片……", HintType.Blue)
+            Try
+                Await Task.Run(Sub() DirectoryUtils.Delete(Paths.Base & "PCL\Pictures"))
+            Catch ex As Exception
+                Logger.Error(ex, "清理背景图片失败", LogBehavior.Alert)
+                Return
+            End Try
             BackgroundRefresh(False, True)
             Hint("背景图片已清空！", HintType.Green)
         End If
@@ -213,6 +193,9 @@ Public Class PageSetupUI
                     End If
                     RunInUi(
                         Sub()
+                            Settings.Set("PcluThemePalette", ThemeId)
+                            Settings.Set("UiLauncherTheme", 14)
+                            ThemeRefresh()
                             Settings.Set("PcluThemeBackground", Target)
                             Settings.Set("PcluThemeVideo", IsVideo)
                             If IsVideo Then
@@ -409,9 +392,9 @@ Refresh:
                 FrmSetupUI.PanCustomNet.Visibility = Visibility.Visible
                 FrmSetupUI.HintCustom.Visibility = Visibility.Visible
                 FrmSetupUI.HintCustomWarn.Visibility = If(Settings.Get(Of Boolean)("HintCustomWarn"), Visibility.Collapsed, Visibility.Visible)
-                FrmSetupUI.HintCustom.Text = $"从指定网址联网获取主页内容。服主也可以用于动态更新服务器公告。{vbCrLf}如果你制作了稳定运行的联网主页，可以点击这条提示投稿，若合格即可加入预设！"
+                FrmSetupUI.HintCustom.Text = $"从指定网址联网获取主页内容。服主也可以用于动态更新服务器公告。{vbCrLf}如果你制作了稳定运行的联网主页，可以点击这里向 PCLU 项目反馈。"
                 CustomEventService.SetEventType(FrmSetupUI.HintCustom, CustomEvent.EventType.打开网页)
-                CustomEventService.SetEventData(FrmSetupUI.HintCustom, "https://github.com/Meloong-Git/PCL/discussions/2528")
+                CustomEventService.SetEventData(FrmSetupUI.HintCustom, "https://github.com/hejinye7/PCLlife/issues")
             Case 3 '预设
                 FrmSetupUI.PanCustomPreset.Visibility = Visibility.Visible
                 FrmSetupUI.PanCustomLocal.Visibility = Visibility.Collapsed

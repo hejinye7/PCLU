@@ -140,7 +140,7 @@
                     <TextBlock Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Text="程序根目录 PCL\Cache\（固定）" Foreground="{DynamicResource ColorBrushGray2}" />
                     <local:MyCheckBox Margin="0,5,0,4" Text="匿名数据收集" Grid.Row="6" Height="22" Grid.ColumnSpan="2"
                         x:Name="CheckSystemTelemetry" local:SettingService.Key="SystemSystemTelemetry" 
-                        ToolTip="当下载失败、PCL 出错、游戏崩溃等事件时，PCL 会匿名上报情况，以通知龙猫 “哦吼，出错了”，让龙猫能更好地修 Bug……&#xa;你可以关闭上报，不过龙猫就不知道你遇到了什么 Bug 了……&#13;PCL 不会上传或收集任何个人信息，包括上报的东西里面也没有！&#xa;详情：https://github.com/Meloong-Git/PCL/discussions/7036" />
+                        ToolTip="当下载失败、PCLU 出错、游戏崩溃等事件时，启动器可能匿名上报错误情况。&#xa;你可以在设置中关闭上报。&#xa;详情：https://github.com/hejinye7/PCLlife/issues" />
                     <Grid Height="35" Grid.Row="7" Grid.ColumnSpan="5" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="Button" />
@@ -161,7 +161,7 @@
                     </Grid>
                 </Grid>
             </local:MyCard>
-            <local:MyCard Margin="0,0,0,15" Title="PCLU 同步账号">
+            <local:MyCard x:Name="CardPcluSync" Margin="0,0,0,15" Title="账号同步（WebDAV）">
                 <Grid Margin="25,40,25,17">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Name" />
@@ -184,8 +184,8 @@
                     <PasswordBox Grid.Row="4" Grid.Column="1" x:Name="TextPcluSyncPassword" VerticalContentAlignment="Center" Padding="6,0" />
                     <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Text="仅同步收藏夹和可迁移设置，不会上传游戏账号令牌或本机路径。" Opacity="0.55" Margin="0,10,0,0" />
                     <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,18,0,0">
-                        <local:MyButton x:Name="BtnPcluSyncUpload" Text="上传同步" MinWidth="120" Padding="13,0" Margin="0,0,15,0" />
-                        <local:MyButton x:Name="BtnPcluSyncDownload" Text="下载同步" MinWidth="120" Padding="13,0" />
+                        <local:MyButton x:Name="BtnPcluSyncUpload" Text="上传同步" Width="140" Height="35" Padding="13,0" Margin="0,0,15,0" />
+                        <local:MyButton x:Name="BtnPcluSyncDownload" Text="下载同步" Width="140" Height="35" Padding="13,0" />
                     </StackPanel>
                 </Grid>
             </local:MyCard>

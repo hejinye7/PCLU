@@ -346,10 +346,15 @@ PreFin:
     Private ComboServerLoginLast As Integer
     Private Sub ComboServerLogin_Changed() Handles ComboServerLogin.SelectionChanged, TextServerNide.ValidatedTextChanged, TextServerAuthServer.ValidatedTextChanged, TextServerAuthRegister.ValidatedTextChanged
         If AniControlEnabled <> 0 Then Return
+        If ComboServerLogin.SelectedIndex = 5 AndAlso String.IsNullOrWhiteSpace(TextServerAuthServer.Text) Then
+            TextServerAuthServer.Text = "https://littleskin.cn/api/yggdrasil"
+            TextServerAuthRegister.Text = "https://littleskin.cn/auth/register"
+            TextServerAuthName.Text = "LittleSkin 登录"
+        End If
         UpdateServerLoginUI()
         '检查是否输入正确，正确才触发设置改变
         If ComboServerLogin.SelectedIndex = 3 AndAlso Not TextServerNide.IsValidated Then Return
-        If ComboServerLogin.SelectedIndex = 4 AndAlso Not TextServerAuthServer.IsValidated Then Return
+        If (ComboServerLogin.SelectedIndex = 4 OrElse ComboServerLogin.SelectedIndex = 5) AndAlso Not TextServerAuthServer.IsValidated Then Return
         '检查结果是否发生改变，未改变则不触发设置改变
         If ComboServerLoginLast = ComboServerLogin.SelectedIndex Then Return
         '触发
@@ -362,13 +367,14 @@ PreFin:
         LabServerNide.Visibility = If(Type = 3, Visibility.Visible, Visibility.Collapsed)
         TextServerNide.Visibility = If(Type = 3, Visibility.Visible, Visibility.Collapsed)
         PanServerNide.Visibility = If(Type = 3, Visibility.Visible, Visibility.Collapsed)
-        LabServerAuthName.Visibility = If(Type = 4, Visibility.Visible, Visibility.Collapsed)
-        TextServerAuthName.Visibility = If(Type = 4, Visibility.Visible, Visibility.Collapsed)
-        LabServerAuthRegister.Visibility = If(Type = 4, Visibility.Visible, Visibility.Collapsed)
-        TextServerAuthRegister.Visibility = If(Type = 4, Visibility.Visible, Visibility.Collapsed)
-        LabServerAuthServer.Visibility = If(Type = 4, Visibility.Visible, Visibility.Collapsed)
-        TextServerAuthServer.Visibility = If(Type = 4, Visibility.Visible, Visibility.Collapsed)
-        BtnServerAuthLittle.Visibility = If(Type = 4, Visibility.Visible, Visibility.Collapsed)
+        Dim IsThirdParty = Type = 4 OrElse Type = 5
+        LabServerAuthName.Visibility = If(IsThirdParty, Visibility.Visible, Visibility.Collapsed)
+        TextServerAuthName.Visibility = If(IsThirdParty, Visibility.Visible, Visibility.Collapsed)
+        LabServerAuthRegister.Visibility = If(IsThirdParty, Visibility.Visible, Visibility.Collapsed)
+        TextServerAuthRegister.Visibility = If(IsThirdParty, Visibility.Visible, Visibility.Collapsed)
+        LabServerAuthServer.Visibility = If(IsThirdParty, Visibility.Visible, Visibility.Collapsed)
+        TextServerAuthServer.Visibility = If(IsThirdParty, Visibility.Visible, Visibility.Collapsed)
+        BtnServerAuthLittle.Visibility = If(IsThirdParty, Visibility.Visible, Visibility.Collapsed)
         CardServer.TriggerForceResize()
     End Sub
 

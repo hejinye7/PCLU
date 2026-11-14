@@ -129,6 +129,19 @@ Public Class PageLaunchRight
                     Case 24
                         Logger.Info("主页预设：新一代狗屁王大杂烩主页")
                         Url = "https://end.g-fish.dpdns.org/Custom.xaml"
+                    Case 25
+                        Logger.Info("主页预设：PCLU 启动耗时记录")
+                        Dim CurrentMs = Math.Max(Settings.Get(Of Integer)("CacheStartupPcllMs"), 0)
+                        Dim PreviousMs = Math.Max(Settings.Get(Of Integer)("CacheStartupPreviousPcluMs"), 0)
+                        Dim MaxMs = Math.Max(Math.Max(CurrentMs, PreviousMs), 1)
+                        Dim CurrentLabel = If(CurrentMs > 0, CurrentMs & " ms", "待记录")
+                        Dim PreviousLabel = If(PreviousMs > 0, PreviousMs & " ms", "待记录")
+                        Dim CurrentScale = Math.Max(CurrentMs / CDbl(MaxMs), 0.04).ToString("0.####", Globalization.CultureInfo.InvariantCulture)
+                        Dim PreviousScale = Math.Max(PreviousMs / CDbl(MaxMs), 0.04).ToString("0.####", Globalization.CultureInfo.InvariantCulture)
+                        Content = $"
+                            <local:MyCard Title=""PCLU 启动耗时记录"" Margin=""0,0,0,15""><StackPanel Margin=""25,38,25,18""><TextBlock Text=""记录本机每次启动的三阶段总耗时；不代表原版 PCL 对比。"" Foreground=""{{DynamicResource ColorBrushGray2}}"" Margin=""0,0,0,12"" />
+                            <Grid Height=""26""><Grid.ColumnDefinitions><ColumnDefinition Width=""90""/><ColumnDefinition Width=""*""/><ColumnDefinition Width=""86""/></Grid.ColumnDefinitions><TextBlock Text=""本次启动"" VerticalAlignment=""Center""/><Border Grid.Column=""1"" Height=""10"" CornerRadius=""3"" Background=""{{DynamicResource ColorBrushGray6}}"" VerticalAlignment=""Center""><Border CornerRadius=""3"" Background=""{{DynamicResource ColorBrush3}}"" RenderTransformOrigin=""0,0.5""><Border.RenderTransform><ScaleTransform ScaleX=""{CurrentScale}""/></Border.RenderTransform></Border></Border><TextBlock Grid.Column=""2"" Text=""{CurrentLabel}"" HorizontalAlignment=""Right"" VerticalAlignment=""Center""/></Grid>
+                            <Grid Height=""26""><Grid.ColumnDefinitions><ColumnDefinition Width=""90""/><ColumnDefinition Width=""*""/><ColumnDefinition Width=""86""/></Grid.ColumnDefinitions><TextBlock Text=""上次启动"" VerticalAlignment=""Center""/><Border Grid.Column=""1"" Height=""10"" CornerRadius=""3"" Background=""{{DynamicResource ColorBrushGray6}}"" VerticalAlignment=""Center""><Border CornerRadius=""3"" Background=""{{DynamicResource ColorBrush2}}"" RenderTransformOrigin=""0,0.5""><Border.RenderTransform><ScaleTransform ScaleX=""{PreviousScale}""/></Border.RenderTransform></Border></Border><TextBlock Grid.Column=""2"" Text=""{PreviousLabel}"" HorizontalAlignment=""Right"" VerticalAlignment=""Center""/></Grid></StackPanel></local:MyCard>"
                 End Select
         End Select
         '联网下载

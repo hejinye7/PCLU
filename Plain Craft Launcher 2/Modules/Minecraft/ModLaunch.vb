@@ -1282,6 +1282,9 @@ NextInstance:
         If McLoginLoader.Output.Type = "Auth" Then
             If McLaunchJavaSelected.Version.Major >= 6 Then Args.Add("-Djavax.net.ssl.trustStoreType=WINDOWS-ROOT") '信任系统根证书（5252#）
             Dim Server As String = Settings.Get(Of String)("VersionServerAuthServer", Instance:=McInstanceSelected)
+            If Settings.Get(Of Integer)("VersionServerLogin", Instance:=McInstanceSelected) = 5 AndAlso String.IsNullOrWhiteSpace(Server) Then
+                Server = "https://littleskin.cn/api/yggdrasil"
+            End If
             Try
                 McLaunchLog($"开始 Authlib Injector Prefetch")
                 Dim Response As String = NetRequestByClientRetry(Server, Encoding:=Encoding.UTF8)

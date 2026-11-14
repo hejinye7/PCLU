@@ -84,6 +84,18 @@ Friend Module ModSecret
             If ThemeNow = NewTheme AndAlso NewTheme >= 0 Then Return
             If NewTheme >= 0 Then ThemeNow = NewTheme
 
+            If NewTheme >= 0 AndAlso NewTheme <> 14 Then Settings.Set("PcluThemePalette", "")
+            Select Case Settings.Get(Of String)("PcluThemePalette")
+                Case "coast"
+                    ColorHue = 184 : ColorSat = 68 : ColorLightAdjust = 0 : ColorHueTopbarDelta = 10
+                Case "mountain"
+                    ColorHue = 205 : ColorSat = 70 : ColorLightAdjust = 0 : ColorHueTopbarDelta = 12
+                Case "forest"
+                    ColorHue = 28 : ColorSat = 72 : ColorLightAdjust = 0 : ColorHueTopbarDelta = 12
+                Case "video"
+                    ColorHue = 188 : ColorSat = 92 : ColorLightAdjust = 1 : ColorHueTopbarDelta = 24
+            End Select
+
             Color1 = New MyColor().FromHSL2(ColorHue, ColorSat * 0.2, 25 + ColorLightAdjust * 0.3)
             Color2 = New MyColor().FromHSL2(ColorHue, ColorSat, 45 + ColorLightAdjust)
             Color3 = New MyColor().FromHSL2(ColorHue, ColorSat, 55 + ColorLightAdjust)

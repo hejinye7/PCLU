@@ -18,6 +18,9 @@ Public Class PageSetupSystem
         If IsLoaded Then Return
         IsLoaded = True
 
+        PanMain.Children.Remove(CardPcluSync)
+        PanMain.Children.Insert(0, CardPcluSync)
+
         AniControlEnabled += 1
         Reload()
         TextPcluSyncPassword.Password = Settings.Get(Of String)("PcluSyncPassword")

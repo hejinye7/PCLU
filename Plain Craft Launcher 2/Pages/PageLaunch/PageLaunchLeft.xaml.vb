@@ -315,6 +315,8 @@ UnknownType:
                 End If
                 PanType.Visibility = Visibility.Visible
                 PanTypeOne.Visibility = Visibility.Collapsed
+                RadioLoginTypeAuth.Visibility = Visibility.Visible
+                RadioLoginTypeAuth.Checked = False
                 RadioLoginType5.Visibility = Visibility.Visible
                 RadioLoginType0.Visibility = Visibility.Visible
             Case 1 '仅正版
@@ -326,6 +328,7 @@ UnknownType:
                 Settings.Set("LoginType", McLoginType.Ms)
                 PanType.Visibility = Visibility.Collapsed
                 PanTypeOne.Visibility = Visibility.Visible
+                RadioLoginTypeAuth.Visibility = Visibility.Collapsed
                 PathTypeOne.Data = (New GeometryConverter).ConvertFromString(Logo.IconButtonShield)
                 LabTypeOne.Text = "正版登录"
                 RadioLoginType5.Visibility = Visibility.Visible
@@ -335,6 +338,7 @@ UnknownType:
                 Settings.Set("LoginType", McLoginType.Legacy)
                 PanType.Visibility = Visibility.Collapsed
                 PanTypeOne.Visibility = Visibility.Visible
+                RadioLoginTypeAuth.Visibility = Visibility.Collapsed
                 PathTypeOne.Data = (New GeometryConverter).ConvertFromString(Logo.IconButtonOffline)
                 LabTypeOne.Text = "离线登录"
             Case 3 '统一通行证
@@ -346,20 +350,22 @@ UnknownType:
                 Settings.Set("LoginType", McLoginType.Nide)
                 PanType.Visibility = Visibility.Collapsed
                 PanTypeOne.Visibility = Visibility.Visible
+                RadioLoginTypeAuth.Visibility = Visibility.Collapsed
                 PathTypeOne.Data = (New GeometryConverter).ConvertFromString(Logo.IconButtonCard)
                 LabTypeOne.Text = "统一通行证登录"
-            Case 4 'Authlib-Injector
+            Case 4, 5 'Authlib-Injector / LittleSkin
                 If Settings.Get(Of String)("CacheAuthAccess") = "" Then
                     Type = PageType.Auth
                 Else
                     Type = PageType.AuthSkin
                 End If
                 Settings.Set("LoginType", McLoginType.Auth)
-                PanType.Visibility = Visibility.Collapsed
-                PanTypeOne.Visibility = Visibility.Visible
-                PathTypeOne.Data = (New GeometryConverter).ConvertFromString(Logo.IconButtonCard)
-                LabTypeOne.Text = If(McInstanceSelected Is Nothing, Settings.Get(Of String)("CacheAuthServerName"), Settings.Get(Of String)("VersionServerAuthName", Instance:=McInstanceSelected))
-                If LabTypeOne.Text = "" Then LabTypeOne.Text = "第三方登录"
+                PanType.Visibility = Visibility.Visible
+                PanTypeOne.Visibility = Visibility.Collapsed
+                RadioLoginTypeAuth.Visibility = Visibility.Visible
+                RadioLoginTypeAuth.Checked = True
+                RadioLoginType5.Visibility = Visibility.Visible
+                RadioLoginType0.Visibility = Visibility.Visible
             Case Else
                 Logger.Error($"未知的登录页面：{LoginPageType}", LogBehavior.Toast)
                 GoTo UnknownType
@@ -370,8 +376,28 @@ UnknownType:
         Dim Control As MyRadioButton = FindName("RadioLoginType" & Settings.Get(Of McLoginType)("LoginType"))
         If Control IsNot Nothing Then Control.Checked = True
     End Sub
-    Private Sub RadioLoginType_Change(sender As Object, raiseByMouse As Boolean) Handles RadioLoginType0.Check, RadioLoginType5.Check
-        If raiseByMouse Then RefreshPage(True, True)
+    Private Sub RadioLoginType_Change(sender As Object, raiseByMouse As Boolean) Handles RadioLoginType0.Check, RadioLoginType5.Check, RadioLoginTypeAuth.Check
+        If Not raiseByMouse Then Return
+        If sender Is RadioLoginTypeAuth Then
+            If McInstanceSelected Is Nothing Then
+                If String.IsNullOrWhiteSpace(Settings.Get(Of String)("CacheAuthServerServer")) Then Settings.Set("CacheAuthServerServer", "https://littleskin.cn/api/yggdrasil")
+                If String.IsNullOrWhiteSpace(Settings.Get(Of String)("CacheAuthServerRegister")) Then Settings.Set("CacheAuthServerRegister", "https://littleskin.cn/auth/register")
+                Settings.Set("CacheAuthServerName", "LittleSkin 登录")
+                Settings.Set("LoginPageType", 5)
+            Else
+                If String.IsNullOrWhiteSpace(Settings.Get(Of String)("VersionServerAuthServer", Instance:=McInstanceSelected)) Then Settings.Set("VersionServerAuthServer", "https://littleskin.cn/api/yggdrasil", Instance:=McInstanceSelected)
+                If String.IsNullOrWhiteSpace(Settings.Get(Of String)("VersionServerAuthRegister", Instance:=McInstanceSelected)) Then Settings.Set("VersionServerAuthRegister", "https://littleskin.cn/auth/register", Instance:=McInstanceSelected)
+                Settings.Set("VersionServerAuthName", "LittleSkin 登录", Instance:=McInstanceSelected)
+                Settings.Set("VersionServerLogin", 5, Instance:=McInstanceSelected)
+            End If
+        ElseIf sender Is RadioLoginType0 OrElse sender Is RadioLoginType5 Then
+            If McInstanceSelected Is Nothing Then
+                If Settings.Get(Of Integer)("LoginPageType") = 4 OrElse Settings.Get(Of Integer)("LoginPageType") = 5 Then Settings.Set("LoginPageType", 0)
+            ElseIf Settings.Get(Of Integer)("VersionServerLogin", Instance:=McInstanceSelected) = 4 OrElse Settings.Get(Of Integer)("VersionServerLogin", Instance:=McInstanceSelected) = 5 Then
+                Settings.Set("VersionServerLogin", 0, Instance:=McInstanceSelected)
+            End If
+        End If
+        RefreshPage(True, True)
     End Sub
 
 #End Region

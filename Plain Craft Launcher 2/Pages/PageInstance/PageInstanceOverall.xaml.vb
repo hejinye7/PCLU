@@ -276,33 +276,14 @@ Public Class PageInstanceOverall
 
     '删除版本
     '修改此代码时，同时修改 PageSelectRight 中的代码
-    Private Sub BtnManageDelete_Click(sender As Object, e As EventArgs) Handles BtnManageDelete.Click
+    Private Async Sub BtnManageDelete_Click(sender As Object, e As EventArgs) Handles BtnManageDelete.Click
         Try
-            If McInstanceLock.IsLocked(PageInstanceLeft.Instance) Then
-                Hint("该版本正在被修改，请稍后再删除！", HintType.Red)
-                Return
-            End If
-            Dim IsShiftPressed As Boolean = My.Computer.Keyboard.ShiftKeyDown
-            Dim IsHintIndie As Boolean = PageInstanceLeft.Instance.State <> McInstance.McInstanceState.Error AndAlso PageInstanceLeft.Instance.PathIndie <> McFolderSelected
-            Dim SavesFolder = DirectoryUtils.GetInfo(PageInstanceLeft.Instance.PathIndie & "saves\")
-            Dim SaveEntries = If(IsHintIndie AndAlso SavesFolder.Exists, SavesFolder.EnumerateDirectories.OrderByDescending(Function(Save) Save.LastWriteTime).Select(Function(Save) $"{Save.Name}（上次修改：{StringUtils.FormatTimeSpan(Save.LastWriteTime - Date.Now, False)}）").ToList, New List(Of String))
-            Select Case MyMsgBox($"你确定要{If(IsShiftPressed, "永久", "")}删除版本 {PageInstanceLeft.Instance.Name} 吗？" &
-                        If(IsHintIndie, vbCrLf & "该版本对应的存档、资源包、Mod 等文件也将被一并删除！" &
-                            If(SaveEntries.Any, vbCrLf & vbCrLf & "这会删除以下存档：" & vbCrLf & "· " & SaveEntries.Join(vbCrLf & "· "), ""), ""),
-                        "版本删除确认", , "取消",, IsHintIndie OrElse IsShiftPressed)
-                Case 1
-                    PageInstanceLeft.Instance.ResetSettingsCache()
-                    DirectoryUtils.Delete(PageInstanceLeft.Instance.PathVersion, Not IsShiftPressed)
-                    Hint("已删除版本 " & PageInstanceLeft.Instance.Name & "！", HintType.Green)
-                Case 2
-                    Return
-            End Select
+            Dim Instance = PageInstanceLeft.Instance
+            If Not Await PageSelectRight.DeleteInstanceConfirmed(Instance) Then Return
             LoaderFolderRun(McInstanceListLoader, McFolderSelected, LoaderFolderRunType.ForceRun, MaxDepth:=1, ExtraPath:="versions\")
             FrmMain.PageBack()
-        Catch ex As OperationCanceledException
-            Logger.Warn(ex, $"删除版本 {PageInstanceLeft.Instance.Name} 被主动取消")
         Catch ex As Exception
-            Logger.Error(ex, $"删除版本 {PageInstanceLeft.Instance.Name} 失败", LogBehavior.Alert)
+            Logger.Error(ex, "删除版本失败", LogBehavior.Alert)
         End Try
     End Sub
 

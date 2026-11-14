@@ -139,7 +139,7 @@ Public Class PageSelectRight
         End Sub
         Dim BtnDel As New MyIconButton With {.LogoScale = 1.1, .Logo = Logo.IconButtonDelete}
         BtnDel.ToolTip = "删除"
-        AddHandler BtnDel.Click, Sub() DeleteInstance(sender, Instance)
+        AddHandler BtnDel.Click, Async Sub() Await DeleteInstance(sender, Instance)
         If Instance.State <> McInstance.McInstanceState.Error Then
             Dim BtnCont As New MyIconButton With {.LogoScale = 1.1, .Logo = Logo.IconButtonSetup}
             BtnCont.ToolTip = "设置"
@@ -185,27 +185,49 @@ Public Class PageSelectRight
     End Sub
 
     '修改此代码时，同时修改 PageInstanceOverall 中的代码
-    Public Shared Sub DeleteInstance(Item As MyListItem, Instance As McInstance)
+    Public Shared Async Function DeleteInstanceConfirmed(Instance As McInstance) As Task(Of Boolean)
         Try
             If McInstanceLock.IsLocked(Instance) Then
                 Hint("该版本正在被修改，请稍后再删除！", HintType.Red)
-                Return
+                Return False
             End If
             Dim IsShiftPressed As Boolean = My.Computer.Keyboard.ShiftKeyDown
             Dim IsHintIndie As Boolean = Instance.State <> McInstance.McInstanceState.Error AndAlso Instance.PathIndie <> McFolderSelected
-            Dim SavesFolder = DirectoryUtils.GetInfo(Instance.PathIndie & "saves\")
-            Dim SaveEntries = If(IsHintIndie AndAlso SavesFolder.Exists, SavesFolder.EnumerateDirectories.OrderByDescending(Function(Save) Save.LastWriteTime).Select(Function(Save) $"{Save.Name}（上次修改：{StringUtils.FormatTimeSpan(Save.LastWriteTime - Date.Now, False)}）").ToList, New List(Of String))
+            Dim SavesPath = Instance.PathIndie & "saves\"
+            Dim SaveEntries = Await Task.Run(Function()
+                                                 Dim SavesFolder = DirectoryUtils.GetInfo(SavesPath)
+                                                 Return If(IsHintIndie AndAlso SavesFolder.Exists,
+                                                     SavesFolder.EnumerateDirectories.OrderByDescending(Function(Save) Save.LastWriteTime).
+                                                         Select(Function(Save) $"{Save.Name}（上次修改：{StringUtils.FormatTimeSpan(Save.LastWriteTime - Date.Now, False)}）").ToList(),
+                                                     New List(Of String))
+                                             End Function)
             Select Case MyMsgBox($"你确定要{If(IsShiftPressed, "永久", "")}删除版本 {Instance.Name} 吗？" &
                         If(IsHintIndie, vbCrLf & "该版本对应的存档、资源包、Mod 等文件也将被一并删除！", "") &
                         If(SaveEntries.Any, vbCrLf & vbCrLf & "这会删除以下存档：" & vbCrLf & "· " & SaveEntries.Join(vbCrLf & "· "), ""),
                         "版本删除确认", , "取消",, True)
                 Case 1
                     Instance.ResetSettingsCache()
-                    DirectoryUtils.Delete(Instance.PathVersion, Not IsShiftPressed)
+                    Hint("正在后台删除版本文件，请稍候……", HintType.Blue)
+                    Dim TargetPath = Instance.PathVersion
+                    Await Task.Run(Sub() DirectoryUtils.Delete(TargetPath, Not IsShiftPressed))
                     Hint("版本 " & Instance.Name & " 已删除！", HintType.Green)
+                    Return True
                 Case 2
-                    Return
+                    Return False
             End Select
+            Return False
+        Catch ex As OperationCanceledException
+            Logger.Warn(ex, $"删除版本 {Instance.Name} 被主动取消")
+            Return False
+        Catch ex As Exception
+            Logger.Error(ex, $"删除版本 {Instance.Name} 失败", LogBehavior.Alert)
+            Return False
+        End Try
+    End Function
+
+    Public Shared Async Function DeleteInstance(Item As MyListItem, Instance As McInstance) As Task
+        If Not Await DeleteInstanceConfirmed(Instance) Then Return
+        Try
             '从 UI 中移除
             If Instance.DisplayType = McInstanceCardType.Hidden OrElse Not Instance.IsStar Then
                 '仅出现在当前卡片
@@ -228,12 +250,10 @@ Public Class PageSelectRight
                 '同时出现在当前卡片与收藏夹
                 LoaderFolderRun(McInstanceListLoader, McFolderSelected, LoaderFolderRunType.ForceRun, MaxDepth:=1, ExtraPath:="versions\")
             End If
-        Catch ex As OperationCanceledException
-            Logger.Warn(ex, $"删除版本 {Instance.Name} 被主动取消")
         Catch ex As Exception
-            Logger.Error(ex, $"删除版本 {Instance.Name} 失败", LogBehavior.Alert)
+            Logger.Error(ex, $"刷新已删除版本的列表失败（{Instance.Name}）", LogBehavior.Alert)
         End Try
-    End Sub
+    End Function
 
     Public Sub BtnEmptyDownload_Loaded() Handles BtnEmptyDownload.Loaded
         Dim NewVisibility = If((Settings.Get(Of Boolean)("UiHiddenPageDownload") AndAlso Not PageSetupUI.HiddenForceShow) OrElse ShowHidden, Visibility.Collapsed, Visibility.Visible)

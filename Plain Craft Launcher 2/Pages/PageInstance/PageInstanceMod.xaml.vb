@@ -659,11 +659,11 @@ Install:
     End Sub
 
     '删除
-    Private Sub BtnSelectDelete_Click() Handles BtnSelectDelete.Click
-        DeleteMods(LocalResourceLoader.Output.Where(Function(m) SelectedMods.Contains(m.EnabledName)))
+    Private Async Sub BtnSelectDelete_Click() Handles BtnSelectDelete.Click
+        Await DeleteMods(LocalResourceLoader.Output.Where(Function(m) SelectedMods.Contains(m.EnabledName)))
         ChangeAllSelected(False)
     End Sub
-    Private Sub DeleteMods(ModsToDelete As IEnumerable(Of LocalResourceFile))
+    Private Async Function DeleteMods(ModsToDelete As IEnumerable(Of LocalResourceFile)) As Task
         Try
             Dim IsSuccessful As Boolean = True
             Dim IsShiftPressed As Boolean = My.Computer.Keyboard.ShiftKeyDown
@@ -680,7 +680,7 @@ Install:
             For Each ModEntity In ModList
                 '删除
                 Try
-                    FileUtils.Delete(ModEntity.File.FullName, Not IsShiftPressed)
+                    Await Task.Run(Sub() FileUtils.Delete(ModEntity.File.FullName, Not IsShiftPressed))
                 Catch ex As OperationCanceledException
                     Logger.Warn(ex, "删除 Mod 被主动取消")
                     ReloadModList(True)
@@ -722,7 +722,7 @@ Install:
             ReloadModList(True)
         End Try
         LoaderRun(LoaderFolderRunType.UpdateOnly)
-    End Sub
+    End Function
 
     '取消选择
     Private Sub BtnSelectCancel_Click() Handles BtnSelectCancel.Click
@@ -786,9 +786,9 @@ Install:
         End Try
     End Sub
     '删除
-    Public Sub Delete_Click(sender As MyIconButton, e As EventArgs)
+    Public Async Sub Delete_Click(sender As MyIconButton, e As EventArgs)
         Dim ListItem As MyLocalModItem = sender.Tag
-        DeleteMods({ListItem.Entry})
+        Await DeleteMods({ListItem.Entry})
     End Sub
     '启用 / 禁用
     Public Sub ED_Click(sender As MyIconButton, e As EventArgs)

@@ -11,6 +11,22 @@ Public Class FormMain
         Dim FeatureList As New List(Of KeyValuePair(Of Integer, String))
         '统计更新日志条目
         If BuildType = BuildTypes.Release Then
+            If LastVersion < 441 Then 'Release 1.0.0.5
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：反馈打开网页或日志文件夹时阻塞启动器，外部程序改为后台启动"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：启动页可直接切换到 LittleSkin 第三方登录"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "优化：主题包现在会应用匹配的主题色，并统一下载按钮尺寸"))
+            End If
+            If LastVersion < 443 Then 'Release 1.0.0.6
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：第三方登录认证服务器地址加载时丢失，登录方式切换按钮保持可见"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：U 盘安装自动扫描实例，并避免后台跨线程读取界面控件"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：主页默认显示 PCLU 实测启动耗时记录，不再使用伪造的原版基准"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "优化：反馈操作与 WebDAV 按钮响应和尺寸"))
+            End If
+            If LastVersion < 439 Then 'Release 1.0.0.4
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：删除大型实例时窗口无响应，目录扫描与删除现由后台执行"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：第三方登录可直接选择 LittleSkin，默认填入官方认证地址"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "整理：设置分类和 WebDAV 账号同步入口"))
+            End If
             If LastVersion < 437 Then 'Release 1.0.0.3
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：LabyMod 安装任务并发保存配置时发生文件已存在错误"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(2, "优化：短时间内重复搜索社区资源时复用列表响应"))
@@ -137,6 +153,22 @@ Public Class FormMain
                 BugCount += 21
             End If
         Else
+            If LastVersion < 442 Then 'Snapshot 1.0.0.5
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：反馈打开网页或日志文件夹时阻塞启动器，外部程序改为后台启动"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：启动页可直接切换到 LittleSkin 第三方登录"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "优化：主题包现在会应用匹配的主题色，并统一下载按钮尺寸"))
+            End If
+            If LastVersion < 444 Then 'Snapshot 1.0.0.6
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：第三方登录认证服务器地址加载时丢失，登录方式切换按钮保持可见"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：U 盘安装自动扫描实例，并避免后台跨线程读取界面控件"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：主页默认显示 PCLU 实测启动耗时记录，不再使用伪造的原版基准"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "优化：反馈操作与 WebDAV 按钮响应和尺寸"))
+            End If
+            If LastVersion < 440 Then 'Snapshot 1.0.0.4
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(5, "修复：删除大型实例时窗口无响应，目录扫描与删除现由后台执行"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "新增：第三方登录可直接选择 LittleSkin，默认填入官方认证地址"))
+                FeatureList.Add(New KeyValuePair(Of Integer, String)(3, "整理：设置分类和 WebDAV 账号同步入口"))
+            End If
             If LastVersion < 438 Then 'Snapshot 1.0.0.3
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(4, "修复：LabyMod 安装任务并发保存配置时发生文件已存在错误"))
                 FeatureList.Add(New KeyValuePair(Of Integer, String)(2, "优化：短时间内重复搜索社区资源时复用列表响应"))
@@ -536,7 +568,10 @@ Public Class FormMain
 
         ApplicationStartPhase3 = GetTimeMs() - ApplicationStartTick
         Logger.Info($"第三阶段加载用时：{ApplicationStartPhase3} ms")
-        Settings.Set("CacheStartupPcllMs", CInt(ApplicationStartPhase1 + ApplicationStartPhase2 + ApplicationStartPhase3))
+        Dim StartupElapsed As Integer = CInt(ApplicationStartPhase1 + ApplicationStartPhase2 + ApplicationStartPhase3)
+        Dim PreviousStartupElapsed As Integer = Settings.Get(Of Integer)("CacheStartupPcllMs")
+        If PreviousStartupElapsed > 0 Then Settings.Set("CacheStartupPreviousPcluMs", PreviousStartupElapsed)
+        Settings.Set("CacheStartupPcllMs", StartupElapsed)
     End Sub
     '根据打开次数触发的事件
     Private Sub RunCountSub()
@@ -705,7 +740,7 @@ Public Class FormMain
         If ReturnCode = ProcessReturnValues.Exception Then
             If Not IsLogShown Then
                 FeedbackInfo()
-                Logger.Info("请在 https://github.com/Meloong-Git/PCL/issues 提交错误报告，以便于作者解决此问题！")
+                Logger.Info("请在 https://github.com/hejinye7/PCLlife/issues 提交 PCLU 错误报告，以便于项目维护者解决此问题！")
                 IsLogShown = True
                 StartProcess(Paths.Base & "PCL\Log1.txt")
             End If
